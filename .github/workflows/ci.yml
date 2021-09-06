@@ -1,0 +1,77 @@
+name: CI
+
+"on":
+  push:
+    branches:
+      - master
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Run poetry install
+        run: poetry install
+
+      - name: Lint with flake 8
+        run: |
+          poetry run flake8 netbox_lists --count --max-line-length=120 --show-source --statistics
+
+  test:
+    strategy:
+      matrix:
+        include:
+          - container_tag: v2.11
+            netbox_docker_tag: 1.2.0
+          - container_tag: v3.0
+            netbox_docker_tag: 1.3.0
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install poetry
+        uses: snok/install-poetry@v1.1.1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Run poetry install
+        run: |
+          poetry install
+
+      - name: Checkout netbox-community/netbox-docker
+        uses: actions/checkout@v2
+        with:
+          repository: netbox-community/netbox-docker
+          path: netbox-docker
+          ref: ${{ matrix.netbox_docker_tag }}
+
+      - name: Run poetry build
+        run: poetry build
+
+      - name: Run test_setup.sh
+        run: ./tests/test_setup.sh
+        env:
+          NETBOX_CONTAINER_TAG: ${{ matrix.container_tag }}
+
+      - name: Run pytest
+        run: |
+          poetry run pytest -v
