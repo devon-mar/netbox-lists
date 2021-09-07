@@ -10,7 +10,9 @@ class ListsPluginConfig(PluginConfig):
     author = "Devon Mar"
     base_url = "lists"
     required_settings = []
-    default_settings = {}
+    default_settings = {
+        "as_cidr": False
+    }
 
 
 config = ListsPluginConfig

@@ -151,6 +151,15 @@ def nb_api():
         device=test_device_2.id,
         ipaddresses=[test_device_2_intf_1_ip_1.id]
     )
+    test_device_2_svc_2 = nb_create(
+        api.ipam.services,
+        name="HTTP",
+        ports=[80],
+        protocol="tcp",
+        device=test_device_2.id,
+        ipaddresses=[test_device_2_intf_1_ip_1.id, test_device_2_intf_1_ip_2.id],
+        tags=[test_tag.id]
+    )
     test_cluster_type = nb_create(
         api.virtualization.cluster_types,
         name="test cluster type",
@@ -193,11 +202,13 @@ def nb_api():
         cluster=test_cluster.id
     )
 
-    test_prefix = nb_create(api.ipam.prefixes, prefix="192.0.2.0/24")
-    test_prefix = nb_create(api.ipam.prefixes, prefix="192.0.2.32/27", tags=[test_tag.id])
+    test_prefix_1 = nb_create(api.ipam.prefixes, prefix="192.0.2.0/24")
+    test_prefix_2 = nb_create(api.ipam.prefixes, prefix="192.0.2.32/27", tags=[test_tag.id])
+    test_prefix_3 = nb_create(api.ipam.prefixes, prefix="2001:db8:2::/64", tags=[test_tag.id])
     test_rir = nb_create(api.ipam.rirs, name="test rir", slug="test-rir")
-    test_aggregate = nb_create(api.ipam.aggregates, prefix="10.0.0.0/8", rir=test_rir.id)
-    test_aggregate = nb_create(api.ipam.aggregates, prefix="172.16.0.0/12", rir=test_rir.id, tags=[test_tag.id])
+    test_aggregate_1 = nb_create(api.ipam.aggregates, prefix="10.0.0.0/8", rir=test_rir.id)
+    test_aggregate_2 = nb_create(api.ipam.aggregates, prefix="172.16.0.0/12", rir=test_rir.id, tags=[test_tag.id])
+    test_aggregate_3 = nb_create(api.ipam.aggregates, prefix="2001:db8::/32", rir=test_rir.id, tags=[test_tag.id])
 
     yield api
     nb_cleanup()
@@ -214,7 +225,7 @@ def nb_api():
             ["192.0.2.1", "192.0.2.2", "192.0.2.3", "2001:db8::1", "2001:db8::3"]
         ),
         (
-            "http://localhost:8000/api/plugins/lists/ip-addresses?as_cidr",
+            "http://localhost:8000/api/plugins/lists/ip-addresses?as_cidr=true",
             ["192.0.2.1/32", "192.0.2.2/32", "192.0.2.3/32", "2001:db8::1/128", "2001:db8::3/128"]
         ),
         (
@@ -222,40 +233,83 @@ def nb_api():
             ["192.0.2.1", "192.0.2.2", "192.0.2.3"]
         ),
         (
-            "http://localhost:8000/api/plugins/lists/ip-addresses?family=4&as_cidr",
+            "http://localhost:8000/api/plugins/lists/ip-addresses?family=4&as_cidr=true",
             ["192.0.2.1/32", "192.0.2.2/32", "192.0.2.3/32"]
         ),
-        ("http://localhost:8000/api/plugins/lists/prefixes", ["192.0.2.0/24", "192.0.2.32/27"]),
-        ("http://localhost:8000/api/plugins/lists/aggregates", ["10.0.0.0/8", "172.16.0.0/12"]),
-        ("http://localhost:8000/api/plugins/lists/services", ["192.0.2.2"]),
-        ("http://localhost:8000/api/plugins/lists/services?as_cidr", ["192.0.2.2/32"]),
+        #
+        # Otheres
+        #
+        ("http://localhost:8000/api/plugins/lists/prefixes", ["192.0.2.0/24", "192.0.2.32/27", "2001:db8:2::/64"]),
+        ("http://localhost:8000/api/plugins/lists/aggregates", ["10.0.0.0/8", "172.16.0.0/12", "2001:db8::/32"]),
+        ("http://localhost:8000/api/plugins/lists/services", ["192.0.2.2", "2001:db8::1"]),
+        ("http://localhost:8000/api/plugins/lists/services?as_cidr=true", ["192.0.2.2/32", "2001:db8::1/128"]),
+        ("http://localhost:8000/api/plugins/lists/services?name=DNS&as_cidr=true", ["192.0.2.2/32"]),
         #
         # Devices
         #
         ("http://localhost:8000/api/plugins/lists/devices", ["192.0.2.1", "2001:db8::1"]),
-        ("http://localhost:8000/api/plugins/lists/devices?as_cidr&family=4", ["192.0.2.1/32"]),
+        ("http://localhost:8000/api/plugins/lists/devices?as_cidr=true&family=4", ["192.0.2.1/32"]),
         ("http://localhost:8000/api/plugins/lists/devices?family=6", ["2001:db8::1"]),
         #
         # Virtual Machines
         #
         ("http://localhost:8000/api/plugins/lists/virtual-machines", ["192.0.2.3", "2001:db8::3"]),
         ("http://localhost:8000/api/plugins/lists/virtual-machines?family=4", ["192.0.2.3"]),
-        ("http://localhost:8000/api/plugins/lists/virtual-machines?as_cidr&family=6", ["2001:db8::3/128"]),
-
+        ("http://localhost:8000/api/plugins/lists/virtual-machines?as_cidr=true&family=6", ["2001:db8::3/128"]),
+        #
+        # Devices-VMs
+        #
+        (
+            "http://localhost:8000/api/plugins/lists/devices-vms",
+            ["192.0.2.1", "2001:db8::1", "192.0.2.3", "2001:db8::3"]
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/devices-vms?as_cidr=true",
+            ["192.0.2.1/32", "2001:db8::1/128", "192.0.2.3/32", "2001:db8::3/128"]
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/devices-vms?as_cidr=true&name=VM1",
+            ["192.0.2.3/32", "2001:db8::3/128"]
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/devices-vms?as_cidr=true&name=VM1&family=6",
+            ["2001:db8::3/128"]
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/devices-vms?as_cidr=true&name=Test Device 1",
+            ["192.0.2.1/32", "2001:db8::1/128"]
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/devices-vms?as_cidr=true&name=Test Device 1&family=4",
+            ["192.0.2.1/32"]
+        ),
         # Test a tag containing only devices
         ("http://localhost:8000/api/plugins/lists/tags/test-device-tag?devices", ["192.0.2.1/32", "2001:db8::1/128"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-device-tag?devices&family=4", ["192.0.2.1/32"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-device-tag?devices&family=6", ["2001:db8::1/128"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-device-tag?ips&aggregates&vms", []),
         ("http://localhost:8000/api/plugins/lists/tags/test-device-tag?devices_primary", ["192.0.2.1/32", "2001:db8::1/128"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-device-tag?devices_primary&family=4", ["192.0.2.1/32"]),
-        # IPs should be returned as /32s or /128s
+        ("http://localhost:8000/api/plugins/lists/tags/test-device-tag?devices_primary&family=6", ["2001:db8::1/128"]),
+        # NOTE: IPs should always be returned as /32s or /128s
         ("http://localhost:8000/api/plugins/lists/tags/test-tag?ips", ["192.0.2.2/32", "2001:db8::1/128"]),
-        ("http://localhost:8000/api/plugins/lists/tags/test-tag?aggregates", ["172.16.0.0/12"]),
-        ("http://localhost:8000/api/plugins/lists/tags/test-tag?prefixes", ["192.0.2.32/27"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?ips&family=4", ["192.0.2.2/32"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?ips&family=6", ["2001:db8::1/128"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?aggregates", ["172.16.0.0/12", "2001:db8::/32"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?aggregates&family=4", ["172.16.0.0/12"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?aggregates&family=6", ["2001:db8::/32"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?prefixes", ["192.0.2.32/27", "2001:db8:2::/64"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?prefixes&family=4", ["192.0.2.32/27"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?prefixes&family=6", ["2001:db8:2::/64"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-tag?vms_primary", ["192.0.2.3/32", "2001:db8::3/128"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?vms_primary&family=4", ["192.0.2.3/32"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-tag?vms_primary&family=6", ["2001:db8::3/128"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?services", ["192.0.2.2/32", "2001:db8::1/128"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?services&family=4", ["192.0.2.2/32"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?services&family=6", ["2001:db8::1/128"]),
         (
             "http://localhost:8000/api/plugins/lists/tags/test-tag?ips&aggregates&prefixes",
-            ["192.0.2.2/32", "2001:db8::1/128", "172.16.0.0/12", "192.0.2.32/27"]
+            ["192.0.2.2/32", "2001:db8::1/128", "172.16.0.0/12", "192.0.2.32/27", "2001:db8:2::/64", "2001:db8::/32"]
         )
     ]
 )

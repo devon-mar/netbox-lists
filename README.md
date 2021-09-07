@@ -23,3 +23,14 @@ This plugin also features endpoints for devices/VMs compatible with Prometheus's
     PLUGINS = ["netbox_lists"]
     ```
 3. Run `upgrade.sh`
+
+## Plugin Config
+```python
+PLUGINS_CONFIG = {
+    "netbox_lists": {
+        # Return IPs as /32 or /128.
+        # Default: False
+        "as_cidr": False
+    }
+}
+```

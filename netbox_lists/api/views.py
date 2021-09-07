@@ -1,11 +1,13 @@
 import operator
 from functools import reduce
+from typing import List, Union
 
 from django.db.models import Q
 from rest_framework import status
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.routers import APIRootView
+from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
 from rest_framework.request import Request
@@ -22,18 +24,19 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 
 from .renderers import PlainTextRenderer
-from .utils import as_cidr, devicesVmPrimaryList, validateFamilyParam
+from .utils import as_cidr, device_vm_primary_list, get_as_cidr, get_family_param
+from .constants import FAMILY_PARAM_NAME, AS_CIDR_PARAM_NAME
 
 
 FAMILY_PARAM = openapi.Parameter(
-    "family",
+    FAMILY_PARAM_NAME,
     in_=openapi.IN_QUERY,
     description="Filter IPs and or prefixes by address family (4|6).",
     type=openapi.TYPE_INTEGER,
     enum=[4, 6]
 )
 AS_CIDR_PARAM = openapi.Parameter(
-    "as_cidr", in_=openapi.IN_QUERY,
+    AS_CIDR_PARAM_NAME, in_=openapi.IN_QUERY,
     description="Return IPs as /32 or /128", type=openapi.TYPE_BOOLEAN
 )
 
@@ -70,7 +73,7 @@ class IPAddressListViewSet(ValuesListViewSet):
     def list(self, request):
         queryset = self.filter_queryset(self.get_queryset())
 
-        if "as_cidr" in request.query_params:
+        if get_as_cidr(request):
             return Response(list(set([as_cidr(i) for i in queryset])))
         # We use list/set because distinct() won't work
         # for two IPs with the same address but different prefix length.
@@ -88,7 +91,7 @@ class ServiceListviewSet(ValuesListViewSet):
     def list(self, request):
         queryset = self.filter_queryset(self.get_queryset())
 
-        if "as_cidr" in request.query_params:
+        if get_as_cidr(request):
             return Response(list(set([as_cidr(i) for i in queryset])))
 
         return Response(list(set([str(i.ip) for i in queryset])))
@@ -104,34 +107,48 @@ class DevicesListViewSet(ValuesListViewSet):
     )
     def list(self, request: Request):
 
-        family = request.query_params.get("family", None)
-        validateFamilyParam(family)
+        family = get_family_param(request)
 
-        return Response(devicesVmPrimaryList(
+        return Response(device_vm_primary_list(
             self.filter_queryset((self.get_queryset())),
             family,
-            cidr=("as_cidr" in request.query_params)
+            cidr=get_as_cidr(request)
         ))
 
 
-@swagger_auto_schema(operation_description="Returns the primary IPs of devices.")
 class VirtualMachinesListViewSet(ValuesListViewSet):
     queryset = VirtualMachine.objects.all()
     filterset_class = VirtualMachineFilterSet
 
     @swagger_auto_schema(
-        operation_description="Returns the primary IPs of devices.",
+        operation_description="Returns the primary IPs of virtual machines.",
         manual_parameters=[AS_CIDR_PARAM, FAMILY_PARAM]
     )
     def list(self, request: Request):
-        family = request.query_params.get("family", None)
-        validateFamilyParam(family)
+        family = get_family_param(request)
 
-        return Response(devicesVmPrimaryList(
+        return Response(device_vm_primary_list(
             self.filter_queryset((self.get_queryset())),
             family,
-            cidr=("as_cidr" in request.query_params)
+            cidr=get_as_cidr(request)
         ))
+
+
+class DevicesVMsListView(APIView):
+    queryset = Device.objects.all()
+
+    @swagger_auto_schema(
+        operation_description="Combined devices and virtual machines primary IPs list. "
+        "Use only parameters common to both devices and VMs."
+    )
+    def get(self, request: Request):
+        family = get_family_param(request)
+        as_cidr = get_as_cidr(request)
+        devices_fs = DeviceFilterSet(request.query_params, queryset=Device.objects.all())
+        vms_fs = VirtualMachineFilterSet(request.query_params, queryset=VirtualMachine.objects.all())
+        devices = device_vm_primary_list(devices_fs.qs, family, as_cidr)
+        vms = device_vm_primary_list(vms_fs.qs, family, as_cidr)
+        return Response(list(set(devices + vms)))
 
 
 class TagsListViewSet(GenericViewSet):
@@ -139,6 +156,97 @@ class TagsListViewSet(GenericViewSet):
     lookup_field = "slug"
     lookup_value_regex = r"[-\w]+"
     renderer_classes = [JSONRenderer, BrowsableAPIRenderer, PlainTextRenderer]
+
+    def get_prefixes(self, tag: Tag, family: Union[int, None], request) -> List[str]:
+        if "prefixes" not in request.query_params:
+            return []
+
+        if family == 4:
+            family_filter = Q(prefix__family=4)
+        elif family == 6:
+            family_filter = Q(prefix__family=6)
+        else:
+            family_filter = Q()
+        qs = Prefix.objects.filter(Q(tags=tag) & family_filter).values_list("prefix", flat=True).distinct()
+        return [str(i) for i in qs]
+
+    def get_aggregates(self, tag: Tag, family: Union[int, None], request) -> List[str]:
+        if "aggregates" not in request.query_params:
+            return []
+
+        if family == 4:
+            family_filter = Q(prefix__family=4)
+        elif family == 6:
+            family_filter = Q(prefix__family=6)
+        else:
+            family_filter = Q()
+
+        qs = Aggregate.objects.filter(Q(tags=tag) & family_filter).values_list("prefix", flat=True).distinct()
+        return [str(i) for i in qs]
+
+    def get_ips(self, tag: Tag, family: Union[int, None], request) -> List[str]:
+        if family == 4:
+            family_filter = Q(address__family=4)
+        elif family == 6:
+            family_filter = Q(address__family=6)
+        else:
+            family_filter = Q()
+
+        ip_filters = []
+        if "ips" in request.query_params:
+            ip_filters.append(Q(tags=tag))
+        if "devices" in request.query_params:
+            ip_filters.append(Q(interface__device__tags=tag))
+        if "vms" in request.query_params:
+            ip_filters.append(Q(vminterface__virtual_machine__tags=tag))
+
+        if len(ip_filters) > 0:
+            return [
+                as_cidr(i)
+                for i in IPAddress.objects.filter(
+                    reduce(operator.or_, ip_filters) & family_filter
+                ).values_list("address", flat=True).distinct()
+            ]
+        else:
+            return []
+
+    def get_services(self, tag: Tag, family: Union[int, None], request) -> List[str]:
+        if "services" not in request.query_params:
+            return []
+
+        if family == 4:
+            family_filter = Q(ipaddresses__address__family=4)
+        elif family == 6:
+            family_filter = Q(ipaddresses__address__family=6)
+        else:
+            family_filter = Q()
+
+        return [
+            as_cidr(i)
+            for i in Service.objects.filter(
+                Q(ipaddresses__isnull=False) & Q(tags=tag) & family_filter
+            ).values_list("ipaddresses__address", flat=True).distinct()
+        ]
+
+    def get_devices_primary(self, tag: Tag, family: Union[int, None], request) -> List[str]:
+        if "devices_primary" not in request.query_params:
+            return []
+
+        return device_vm_primary_list(
+            Device.objects.filter(tags=tag),
+            family,
+            cidr=True
+        )
+
+    def get_vms_primary(self, tag: Tag, family: Union[int, None], request) -> List[str]:
+        if "vms_primary" not in request.query_params:
+            return []
+
+        return device_vm_primary_list(
+            VirtualMachine.objects.filter(tags=tag),
+            family,
+            cidr=True
+        )
 
     @swagger_auto_schema(manual_parameters=[
         openapi.Parameter(
@@ -179,82 +287,13 @@ class TagsListViewSet(GenericViewSet):
             return Response("No slug", status.HTTP_400_BAD_REQUEST)
 
         tag = get_object_or_404(Tag, slug=slug)
-
-        family = request.query_params.get("family", None)
-        validateFamilyParam(family)
-
-        if family == '4':
-            family_filter = Q(family=4)
-        elif family == '6':
-            family_filter = Q(family=6)
-        else:
-            family_filter = Q()
-
-        if "prefixes" in request.query_params:
-            prefixes = [
-                str(i) for i in Prefix.objects.filter(tags=tag).values_list("prefix", flat=True).distinct()
-            ]
-        else:
-            prefixes = []
-
-        if "aggregates" in request.query_params:
-            aggregates = [
-                str(i) for i in Aggregate.objects.filter(tags=tag).values_list("prefix", flat=True).distinct()
-            ]
-        else:
-            aggregates = []
-
-        ip_filters = []
-        if "ips" in request.query_params:
-            ip_filters.append(Q(tags=tag))
-        if "devices" in request.query_params:
-            ip_filters.append(Q(interface__device__tags=tag))
-        if "vms" in request.query_params:
-            ip_filters.append(Q(vminterface__virtual_machine__tags=tag))
-        if len(ip_filters) > 0:
-            ips = [
-                as_cidr(i)
-                for i in IPAddress.objects.filter(
-                    reduce(operator.or_, ip_filters) & family_filter
-                ).values_list("address", flat=True).distinct()
-            ]
-        else:
-            ips = []
-
-        if "services" in request.query_params:
-            if family == ' 4':
-                svc_family_filter = Q(ipaddresses__address__family=4)
-            elif family == '6':
-                svc_family_filter = Q(ipaddresses__address__family=6)
-            else:
-                svc_family_filter = Q()
-
-            services = [
-                as_cidr(i)
-                for i in Service.objects.filter(
-                    Q(ipaddresses__isnull=False) & Q(tags=tag) & svc_family_filter
-                ).values_list("ipaddresses__address", flat=True).distinct()
-            ]
-        else:
-            services = []
-
-        if "devices_primary" in request.query_params:
-            devices_primary = devicesVmPrimaryList(
-                Device.objects.filter(tags=tag),
-                family,
-                cidr=True
-            )
-        else:
-            devices_primary = []
-
-        if "vms_primary" in request.query_params:
-            vms_primary = devicesVmPrimaryList(
-                VirtualMachine.objects.filter(tags=tag),
-                family,
-                cidr=True
-            )
-        else:
-            vms_primary = []
+        family = get_family_param(request)
+        prefixes = self.get_prefixes(tag, family, request)
+        aggregates = self.get_aggregates(tag, family, request)
+        ips = self.get_ips(tag, family, request)
+        services = self.get_services(tag, family, request)
+        devices_primary = self.get_devices_primary(tag, family, request)
+        vms_primary = self.get_vms_primary(tag, family, request)
 
         return Response(list(set(prefixes + aggregates + ips + services + devices_primary + vms_primary)))
 
