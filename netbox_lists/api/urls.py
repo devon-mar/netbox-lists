@@ -1,8 +1,9 @@
 from rest_framework import routers
 from django.urls import path
 from .views import (
-    AggregateListViewSet, DevicesListViewSet, DevicesVMsListView, IPAddressListViewSet, ListsRootView, PrefixListViewSet,
-    PrometheusDeviceSD, PrometheusVirtualMachineSD, ServiceListviewSet, TagsListViewSet, VirtualMachinesListViewSet
+    AggregateListViewSet, DevicesListViewSet, DevicesVMsListView, IPAddressListViewSet, ListsRootView,
+    PrefixListViewSet, PrometheusDeviceSD, PrometheusVirtualMachineSD, ServiceListviewSet, TagsListViewSet,
+    VirtualMachinesListViewSet
 )
 
 router = routers.DefaultRouter()
