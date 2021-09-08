@@ -24,7 +24,10 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 
 from .renderers import PlainTextRenderer
-from .utils import as_cidr, device_vm_primary_list, get_as_cidr, get_family_param
+from .utils import (
+    device_vm_primary_list, format_ipn, get_as_cidr,
+    get_family_param, get_service_ips, get_svc_primary_ips_param, make_response
+)
 from .constants import FAMILY_PARAM_NAME, AS_CIDR_PARAM_NAME
 
 
@@ -46,10 +49,13 @@ class ListsRootView(APIRootView):
         return "Lists"
 
 
-class ValuesListViewSet(GenericViewSet):
+class ListsBaseViewSet(GenericViewSet):
     renderer_classes = [JSONRenderer, BrowsableAPIRenderer, PlainTextRenderer]
 
-    def list(self, request):
+
+class ValuesListViewSet(ListsBaseViewSet):
+
+    def list(self, request: Request) -> Response:
         queryset = self.filter_queryset(self.get_queryset())
 
         return Response([str(i) for i in queryset])
@@ -73,39 +79,39 @@ class IPAddressListViewSet(ValuesListViewSet):
     def list(self, request):
         queryset = self.filter_queryset(self.get_queryset())
 
-        if get_as_cidr(request):
-            return Response(list(set([as_cidr(i) for i in queryset])))
-        # We use list/set because distinct() won't work
-        # for two IPs with the same address but different prefix length.
-        return Response(list(set([str(i.ip) for i in queryset])))
+        return make_response([format_ipn(i, get_as_cidr(request)) for i in queryset])
 
 
 class ServiceListviewSet(ValuesListViewSet):
-    queryset = Service.objects.filter(ipaddresses__isnull=False).values_list(
-        "ipaddresses__address", flat=True
-    ).distinct()
+    queryset = Service.objects.all()
 
     filterset_class = ServiceFilterSet
 
-    @swagger_auto_schema(manual_parameters=[AS_CIDR_PARAM])
-    def list(self, request):
-        queryset = self.filter_queryset(self.get_queryset())
+    @swagger_auto_schema(manual_parameters=[
+        AS_CIDR_PARAM,
+        openapi.Parameter(
+            "primary_ips", in_=openapi.IN_QUERY,
+            description="Return Primary IPs if the service doesn't have any assigned IPs.", type=openapi.TYPE_BOOLEAN
+        )
+    ])
+    def list(self, request: Request) -> Response:
+        as_cidr = get_as_cidr(request)
+        family = get_family_param(request)
+        primary_ips = get_svc_primary_ips_param("primary_ips", request)
 
-        if get_as_cidr(request):
-            return Response(list(set([as_cidr(i) for i in queryset])))
-
-        return Response(list(set([str(i.ip) for i in queryset])))
+        qs = self.filter_queryset(self.get_queryset())
+        return make_response(get_service_ips(qs, as_cidr, family, primary_ips))
 
 
 class DevicesListViewSet(ValuesListViewSet):
     queryset = Device.objects.all()
     filterset_class = DeviceFilterSet
 
-    @swagger_auto_schema(
+    @ swagger_auto_schema(
         operation_description="Returns the primary IPs of devices.",
         manual_parameters=[AS_CIDR_PARAM, FAMILY_PARAM]
     )
-    def list(self, request: Request):
+    def list(self, request: Request) -> Response:
 
         family = get_family_param(request)
 
@@ -120,11 +126,11 @@ class VirtualMachinesListViewSet(ValuesListViewSet):
     queryset = VirtualMachine.objects.all()
     filterset_class = VirtualMachineFilterSet
 
-    @swagger_auto_schema(
+    @ swagger_auto_schema(
         operation_description="Returns the primary IPs of virtual machines.",
         manual_parameters=[AS_CIDR_PARAM, FAMILY_PARAM]
     )
-    def list(self, request: Request):
+    def list(self, request: Request) -> Response:
         family = get_family_param(request)
 
         return Response(device_vm_primary_list(
@@ -137,27 +143,26 @@ class VirtualMachinesListViewSet(ValuesListViewSet):
 class DevicesVMsListView(APIView):
     queryset = Device.objects.all()
 
-    @swagger_auto_schema(
+    @ swagger_auto_schema(
         operation_description="Combined devices and virtual machines primary IPs list. "
         "Use only parameters common to both devices and VMs."
     )
-    def get(self, request: Request):
+    def get(self, request: Request) -> Response:
         family = get_family_param(request)
         as_cidr = get_as_cidr(request)
         devices_fs = DeviceFilterSet(request.query_params, queryset=Device.objects.all())
         vms_fs = VirtualMachineFilterSet(request.query_params, queryset=VirtualMachine.objects.all())
         devices = device_vm_primary_list(devices_fs.qs, family, as_cidr)
         vms = device_vm_primary_list(vms_fs.qs, family, as_cidr)
-        return Response(list(set(devices + vms)))
+        return make_response(devices + vms)
 
 
-class TagsListViewSet(GenericViewSet):
+class TagsListViewSet(ListsBaseViewSet):
     queryset = Tag.objects.all()
     lookup_field = "slug"
     lookup_value_regex = r"[-\w]+"
-    renderer_classes = [JSONRenderer, BrowsableAPIRenderer, PlainTextRenderer]
 
-    def get_prefixes(self, tag: Tag, family: Union[int, None], request) -> List[str]:
+    def get_prefixes(self, tag: Tag, family: Union[int, None], request: Request) -> List[str]:
         if "prefixes" not in request.query_params:
             return []
 
@@ -170,7 +175,7 @@ class TagsListViewSet(GenericViewSet):
         qs = Prefix.objects.filter(Q(tags=tag) & family_filter).values_list("prefix", flat=True).distinct()
         return [str(i) for i in qs]
 
-    def get_aggregates(self, tag: Tag, family: Union[int, None], request) -> List[str]:
+    def get_aggregates(self, tag: Tag, family: Union[int, None], request: Request) -> List[str]:
         if "aggregates" not in request.query_params:
             return []
 
@@ -184,7 +189,7 @@ class TagsListViewSet(GenericViewSet):
         qs = Aggregate.objects.filter(Q(tags=tag) & family_filter).values_list("prefix", flat=True).distinct()
         return [str(i) for i in qs]
 
-    def get_ips(self, tag: Tag, family: Union[int, None], request) -> List[str]:
+    def get_ips(self, tag: Tag, family: Union[int, None], request: Request) -> List[str]:
         if family == 4:
             family_filter = Q(address__family=4)
         elif family == 6:
@@ -202,7 +207,7 @@ class TagsListViewSet(GenericViewSet):
 
         if len(ip_filters) > 0:
             return [
-                as_cidr(i)
+                format_ipn(i, True)
                 for i in IPAddress.objects.filter(
                     reduce(operator.or_, ip_filters) & family_filter
                 ).values_list("address", flat=True).distinct()
@@ -210,23 +215,16 @@ class TagsListViewSet(GenericViewSet):
         else:
             return []
 
-    def get_services(self, tag: Tag, family: Union[int, None], request) -> List[str]:
+    def get_services(self, tag: Tag, family: Union[int, None], request: Request) -> List[str]:
         if "services" not in request.query_params:
             return []
 
-        if family == 4:
-            family_filter = Q(ipaddresses__address__family=4)
-        elif family == 6:
-            family_filter = Q(ipaddresses__address__family=6)
-        else:
-            family_filter = Q()
-
-        return [
-            as_cidr(i)
-            for i in Service.objects.filter(
-                Q(ipaddresses__isnull=False) & Q(tags=tag) & family_filter
-            ).values_list("ipaddresses__address", flat=True).distinct()
-        ]
+        return get_service_ips(
+            Service.objects.filter(tags=tag),
+            True,
+            family,
+        get_svc_primary_ips_param("service_primary_ips", request)
+        )
 
     def get_devices_primary(self, tag: Tag, family: Union[int, None], request) -> List[str]:
         if "devices_primary" not in request.query_params:
@@ -248,7 +246,7 @@ class TagsListViewSet(GenericViewSet):
             cidr=True
         )
 
-    @swagger_auto_schema(manual_parameters=[
+    @ swagger_auto_schema(manual_parameters=[
         openapi.Parameter(
             "prefixes", in_=openapi.IN_QUERY,
             description="Include prefixes", type=openapi.TYPE_BOOLEAN
@@ -280,9 +278,13 @@ class TagsListViewSet(GenericViewSet):
         openapi.Parameter(
             "ips", in_=openapi.IN_QUERY,
             description="Include IP Addresses", type=openapi.TYPE_BOOLEAN
+        ),
+        openapi.Parameter(
+            "service_primary_ips", in_=openapi.IN_QUERY,
+            description="Return Primary IPs if the service doesn't have any assigned IPs.", type=openapi.TYPE_BOOLEAN
         )
     ])
-    def retrieve(self, request, slug=None):
+    def retrieve(self, request, slug=None) -> Response:
         if not slug:
             return Response("No slug", status.HTTP_400_BAD_REQUEST)
 
@@ -295,7 +297,7 @@ class TagsListViewSet(GenericViewSet):
         devices_primary = self.get_devices_primary(tag, family, request)
         vms_primary = self.get_vms_primary(tag, family, request)
 
-        return Response(list(set(prefixes + aggregates + ips + services + devices_primary + vms_primary)))
+        return make_response(prefixes + aggregates + ips + services + devices_primary + vms_primary)
 
 
 class PrometheusDeviceSD(GenericViewSet):
@@ -322,7 +324,7 @@ class PrometheusDeviceSD(GenericViewSet):
             "labels": labels
         }
 
-    def list(self, request):
+    def list(self, request: Request) -> Response:
         queryset = self.filter_queryset(self.get_queryset())
         return Response([self._sd_device(d) for d in queryset])
 
@@ -352,6 +354,6 @@ class PrometheusVirtualMachineSD(GenericViewSet):
             "labels": labels
         }
 
-    def list(self, request):
+    def list(self, request: Request) -> Response:
         queryset = self.filter_queryset(self.get_queryset())
         return Response([self._sd_vm(vm) for vm in queryset])

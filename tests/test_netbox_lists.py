@@ -193,6 +193,15 @@ def nb_api():
         assigned_object_type="virtualization.vminterface",
         assigned_object_id=test_vm_1_intf_1.id
     )
+    # This service has no assigned IPs.
+    test_device_2_svc_1 = nb_create(
+        api.ipam.services,
+        name="HTTP",
+        ports=[80],
+        protocol="tcp",
+        virtual_machine=test_vm_1.id,
+        tags=[test_tag.id]
+    )
     # Set primary IP for VM1
     nb_update(test_vm_1, {"primary_ip4": test_vm_1_intf_1_ip_1.id, "primary_ip6": test_vm_1_intf_1_ip_2.id})
 
@@ -221,7 +230,7 @@ def nb_api():
         # IP Address Test Cases
         #
         (
-            "http://localhost:8000/api/plugins/lists/ip-addresses",
+            "http://localhost:8000/api/plugins/lists/ip-addresses?as_cidr=false",
             ["192.0.2.1", "192.0.2.2", "192.0.2.3", "2001:db8::1", "2001:db8::3"]
         ),
         (
@@ -229,43 +238,48 @@ def nb_api():
             ["192.0.2.1/32", "192.0.2.2/32", "192.0.2.3/32", "2001:db8::1/128", "2001:db8::3/128"]
         ),
         (
-            "http://localhost:8000/api/plugins/lists/ip-addresses?family=4",
-            ["192.0.2.1", "192.0.2.2", "192.0.2.3"]
-        ),
-        (
-            "http://localhost:8000/api/plugins/lists/ip-addresses?family=4&as_cidr=true",
+            "http://localhost:8000/api/plugins/lists/ip-addresses?family=4&",
             ["192.0.2.1/32", "192.0.2.2/32", "192.0.2.3/32"]
         ),
+        (
+            "http://localhost:8000/api/plugins/lists/ip-addresses?family=4&as_cidr=false",
+            ["192.0.2.1", "192.0.2.2", "192.0.2.3"]
+        ),
         #
-        # Otheres
+        # Prefixes and Aggregates
         #
         ("http://localhost:8000/api/plugins/lists/prefixes", ["192.0.2.0/24", "192.0.2.32/27", "2001:db8:2::/64"]),
         ("http://localhost:8000/api/plugins/lists/aggregates", ["10.0.0.0/8", "172.16.0.0/12", "2001:db8::/32"]),
-        ("http://localhost:8000/api/plugins/lists/services", ["192.0.2.2", "2001:db8::1"]),
-        ("http://localhost:8000/api/plugins/lists/services?as_cidr=true", ["192.0.2.2/32", "2001:db8::1/128"]),
-        ("http://localhost:8000/api/plugins/lists/services?name=DNS&as_cidr=true", ["192.0.2.2/32"]),
+        #
+        # Services
+        #
+        ("http://localhost:8000/api/plugins/lists/services?as_cidr=false", ["192.0.2.2", "2001:db8::1", "192.0.2.3", "2001:db8::3"]),
+        ("http://localhost:8000/api/plugins/lists/services?as_cidr=false&primary_ips=false", ["192.0.2.2", "2001:db8::1"]),
+        ("http://localhost:8000/api/plugins/lists/services?as_cidr=false&primary_ips=false&family=4", ["192.0.2.2"]),
+        ("http://localhost:8000/api/plugins/lists/services?family=6", ["2001:db8::1/128", "2001:db8::3/128"]),
+        ("http://localhost:8000/api/plugins/lists/services?name=DNS", ["192.0.2.2/32"]),
         #
         # Devices
         #
-        ("http://localhost:8000/api/plugins/lists/devices", ["192.0.2.1", "2001:db8::1"]),
-        ("http://localhost:8000/api/plugins/lists/devices?as_cidr=true&family=4", ["192.0.2.1/32"]),
-        ("http://localhost:8000/api/plugins/lists/devices?family=6", ["2001:db8::1"]),
+        ("http://localhost:8000/api/plugins/lists/devices?as_cidr=false", ["192.0.2.1", "2001:db8::1"]),
+        ("http://localhost:8000/api/plugins/lists/devices?family=4", ["192.0.2.1/32"]),
+        ("http://localhost:8000/api/plugins/lists/devices?family=6&as_cidr=false", ["2001:db8::1"]),
         #
         # Virtual Machines
         #
-        ("http://localhost:8000/api/plugins/lists/virtual-machines", ["192.0.2.3", "2001:db8::3"]),
-        ("http://localhost:8000/api/plugins/lists/virtual-machines?family=4", ["192.0.2.3"]),
-        ("http://localhost:8000/api/plugins/lists/virtual-machines?as_cidr=true&family=6", ["2001:db8::3/128"]),
+        ("http://localhost:8000/api/plugins/lists/virtual-machines?as_cidr=false", ["192.0.2.3", "2001:db8::3"]),
+        ("http://localhost:8000/api/plugins/lists/virtual-machines?family=4&as_cidr=false", ["192.0.2.3"]),
+        ("http://localhost:8000/api/plugins/lists/virtual-machines?family=6", ["2001:db8::3/128"]),
         #
         # Devices-VMs
         #
         (
             "http://localhost:8000/api/plugins/lists/devices-vms",
-            ["192.0.2.1", "2001:db8::1", "192.0.2.3", "2001:db8::3"]
+            ["192.0.2.1/32", "2001:db8::1/128", "192.0.2.3/32", "2001:db8::3/128"]
         ),
         (
-            "http://localhost:8000/api/plugins/lists/devices-vms?as_cidr=true",
-            ["192.0.2.1/32", "2001:db8::1/128", "192.0.2.3/32", "2001:db8::3/128"]
+            "http://localhost:8000/api/plugins/lists/devices-vms?as_cidr=false",
+            ["192.0.2.1", "2001:db8::1", "192.0.2.3", "2001:db8::3"]
         ),
         (
             "http://localhost:8000/api/plugins/lists/devices-vms?as_cidr=true&name=VM1",
@@ -304,9 +318,11 @@ def nb_api():
         ("http://localhost:8000/api/plugins/lists/tags/test-tag?vms_primary", ["192.0.2.3/32", "2001:db8::3/128"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-tag?vms_primary&family=4", ["192.0.2.3/32"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-tag?vms_primary&family=6", ["2001:db8::3/128"]),
-        ("http://localhost:8000/api/plugins/lists/tags/test-tag?services", ["192.0.2.2/32", "2001:db8::1/128"]),
-        ("http://localhost:8000/api/plugins/lists/tags/test-tag?services&family=4", ["192.0.2.2/32"]),
-        ("http://localhost:8000/api/plugins/lists/tags/test-tag?services&family=6", ["2001:db8::1/128"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?services", ["192.0.2.2/32", "2001:db8::1/128", "192.0.2.3/32", "2001:db8::3/128"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?services&service_primary_ips=false", ["192.0.2.2/32", "2001:db8::1/128"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?services&family=4&service_primary_ips=false", ["192.0.2.2/32"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?services&family=4", ["192.0.2.2/32", "192.0.2.3/32"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?services&family=6", ["2001:db8::1/128", "2001:db8::3/128"]),
         (
             "http://localhost:8000/api/plugins/lists/tags/test-tag?ips&aggregates&prefixes",
             ["192.0.2.2/32", "2001:db8::1/128", "172.16.0.0/12", "192.0.2.32/27", "2001:db8:2::/64", "2001:db8::/32"]
@@ -331,9 +347,16 @@ def test_lists_txt(nb_api, nb_requests: requests.Session):
         "http://localhost:8000/api/plugins/lists/ip-addresses?format=text",
         headers={"Accept": "*/*"}
     )
+    ip_only = nb_requests.get(
+        "http://localhost:8000/api/plugins/lists/ip-addresses?format=text&as_cidr=false",
+        headers={"Accept": "*/*"}
+    )
     assert sorted(with_header.text.splitlines()) == sorted(with_format.text.splitlines())
 
-    assert sorted(with_header.text.splitlines()) == ["192.0.2.1", "192.0.2.2", "192.0.2.3", "2001:db8::1", "2001:db8::3"]
+    assert sorted(with_header.text.splitlines()) == [
+        "192.0.2.1/32", "192.0.2.2/32", "192.0.2.3/32", "2001:db8::1/128", "2001:db8::3/128"
+    ]
+    assert sorted(ip_only.text.splitlines()) == ["192.0.2.1", "192.0.2.2", "192.0.2.3", "2001:db8::1", "2001:db8::3"]
 
 
 @pytest.mark.parametrize(

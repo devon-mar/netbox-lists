@@ -11,7 +11,8 @@ class ListsPluginConfig(PluginConfig):
     base_url = "lists"
     required_settings = []
     default_settings = {
-        "as_cidr": False
+        "as_cidr": True,
+        "service_primary_ips": True
     }
 
 
