@@ -223,7 +223,7 @@ class TagsListViewSet(ListsBaseViewSet):
             Service.objects.filter(tags=tag),
             True,
             family,
-        get_svc_primary_ips_param("service_primary_ips", request)
+            get_svc_primary_ips_param("service_primary_ips", request)
         )
 
     def get_devices_primary(self, tag: Tag, family: Union[int, None], request) -> List[str]:
