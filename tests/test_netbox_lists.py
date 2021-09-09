@@ -238,7 +238,7 @@ def nb_api():
             ["192.0.2.1/32", "192.0.2.2/32", "192.0.2.3/32", "2001:db8::1/128", "2001:db8::3/128"]
         ),
         (
-            "http://localhost:8000/api/plugins/lists/ip-addresses?family=4&",
+            "http://localhost:8000/api/plugins/lists/ip-addresses?family=4",
             ["192.0.2.1/32", "192.0.2.2/32", "192.0.2.3/32"]
         ),
         (
@@ -246,9 +246,26 @@ def nb_api():
             ["192.0.2.1", "192.0.2.2", "192.0.2.3"]
         ),
         #
-        # Prefixes and Aggregates
+        # Prefixes
         #
         ("http://localhost:8000/api/plugins/lists/prefixes", ["192.0.2.0/24", "192.0.2.32/27", "2001:db8:2::/64"]),
+        ("http://localhost:8000/api/plugins/lists/prefixes?mask_length4=24", ["192.0.2.0/24", "2001:db8:2::/64"]),
+        (
+            "http://localhost:8000/api/plugins/lists/prefixes?mask_length6=64",
+            ["192.0.2.0/24", "192.0.2.32/27", "2001:db8:2::/64"]
+        ),
+        ("http://localhost:8000/api/plugins/lists/prefixes?mask_length6=64", ["192.0.2.0/24", "192.0.2.32/27", "2001:db8:2::/64"]),
+        (
+            "http://localhost:8000/api/plugins/lists/prefixes?mask_length4__lte=29",
+            ["192.0.2.0/24", "192.0.2.32/27", "2001:db8:2::/64"]
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/prefixes?mask_length4__lte=26",
+            ["192.0.2.0/24", "2001:db8:2::/64"]
+        ),
+        #
+        # Aggregates
+        #
         ("http://localhost:8000/api/plugins/lists/aggregates", ["10.0.0.0/8", "172.16.0.0/12", "2001:db8::/32"]),
         #
         # Services

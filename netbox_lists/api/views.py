@@ -1,3 +1,4 @@
+from netbox_lists.api.filtersets import CustomPrefixFilterSet
 import operator
 from functools import reduce
 from typing import List, Union
@@ -13,7 +14,7 @@ from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
 from rest_framework.request import Request
 
 from ipam.models import Prefix, Aggregate, IPAddress, Service
-from ipam.filtersets import PrefixFilterSet, IPAddressFilterSet, AggregateFilterSet, ServiceFilterSet
+from ipam.filtersets import IPAddressFilterSet, AggregateFilterSet, ServiceFilterSet
 from dcim.models import Device
 from dcim.filtersets import DeviceFilterSet
 from virtualization.models import VirtualMachine
@@ -63,7 +64,7 @@ class ValuesListViewSet(ListsBaseViewSet):
 
 class PrefixListViewSet(ValuesListViewSet):
     queryset = Prefix.objects.values_list("prefix", flat=True).distinct()
-    filterset_class = PrefixFilterSet
+    filterset_class = CustomPrefixFilterSet
 
 
 class AggregateListViewSet(ValuesListViewSet):
