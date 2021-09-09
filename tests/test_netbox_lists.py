@@ -214,6 +214,7 @@ def nb_api():
     test_prefix_1 = nb_create(api.ipam.prefixes, prefix="192.0.2.0/24")
     test_prefix_2 = nb_create(api.ipam.prefixes, prefix="192.0.2.32/27", tags=[test_tag.id])
     test_prefix_3 = nb_create(api.ipam.prefixes, prefix="2001:db8:2::/64", tags=[test_tag.id])
+    test_prefix_4 = nb_create(api.ipam.prefixes, prefix="2001:db8:3::/127")
     test_rir = nb_create(api.ipam.rirs, name="test rir", slug="test-rir")
     test_aggregate_1 = nb_create(api.ipam.aggregates, prefix="10.0.0.0/8", rir=test_rir.id)
     test_aggregate_2 = nb_create(api.ipam.aggregates, prefix="172.16.0.0/12", rir=test_rir.id, tags=[test_tag.id])
@@ -248,20 +249,32 @@ def nb_api():
         #
         # Prefixes
         #
-        ("http://localhost:8000/api/plugins/lists/prefixes", ["192.0.2.0/24", "192.0.2.32/27", "2001:db8:2::/64"]),
-        ("http://localhost:8000/api/plugins/lists/prefixes?mask_length4=24", ["192.0.2.0/24", "2001:db8:2::/64"]),
+        (
+            "http://localhost:8000/api/plugins/lists/prefixes",
+            ["192.0.2.0/24", "192.0.2.32/27", "2001:db8:2::/64", "2001:db8:3::/127"]
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/prefixes?mask_length4=24",
+            ["192.0.2.0/24", "2001:db8:2::/64", "2001:db8:3::/127"]),
         (
             "http://localhost:8000/api/plugins/lists/prefixes?mask_length6=64",
             ["192.0.2.0/24", "192.0.2.32/27", "2001:db8:2::/64"]
         ),
-        ("http://localhost:8000/api/plugins/lists/prefixes?mask_length6=64", ["192.0.2.0/24", "192.0.2.32/27", "2001:db8:2::/64"]),
         (
-            "http://localhost:8000/api/plugins/lists/prefixes?mask_length4__lte=29",
+            "http://localhost:8000/api/plugins/lists/prefixes?mask_length6__gte=70",
+            ["192.0.2.0/24", "192.0.2.32/27", "2001:db8:3::/127"]
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/prefixes?mask_length6__lte=126",
             ["192.0.2.0/24", "192.0.2.32/27", "2001:db8:2::/64"]
         ),
         (
             "http://localhost:8000/api/plugins/lists/prefixes?mask_length4__lte=26",
-            ["192.0.2.0/24", "2001:db8:2::/64"]
+            ["192.0.2.0/24", "2001:db8:2::/64", "2001:db8:3::/127"]
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/prefixes?mask_length4__gte=26",
+            ["192.0.2.32/27", "2001:db8:2::/64", "2001:db8:3::/127"]
         ),
         #
         # Aggregates
