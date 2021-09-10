@@ -16,6 +16,8 @@ This plugin also features endpoints for devices/VMs compatible with Prometheus's
 * The format of the response can be controlled by the `Accept` header (`application/json` or `text/plain`)
   or by the appending `format=(text|json)` to the URL.
 
+* Users with only the `ipam | device` permission will be able to access VMs on the `devices-vms` endpoint.
+
 ## Installation
 1. Add `netbox-lists` to `local_requirements.txt`.
 2. Enable the plugin in `configuration.py`

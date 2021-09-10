@@ -108,7 +108,7 @@ class DevicesListViewSet(ValuesListViewSet):
     queryset = Device.objects.all()
     filterset_class = DeviceFilterSet
 
-    @ swagger_auto_schema(
+    @swagger_auto_schema(
         operation_description="Returns the primary IPs of devices.",
         manual_parameters=[AS_CIDR_PARAM, FAMILY_PARAM]
     )
@@ -127,7 +127,7 @@ class VirtualMachinesListViewSet(ValuesListViewSet):
     queryset = VirtualMachine.objects.all()
     filterset_class = VirtualMachineFilterSet
 
-    @ swagger_auto_schema(
+    @swagger_auto_schema(
         operation_description="Returns the primary IPs of virtual machines.",
         manual_parameters=[AS_CIDR_PARAM, FAMILY_PARAM]
     )
@@ -142,9 +142,17 @@ class VirtualMachinesListViewSet(ValuesListViewSet):
 
 
 class DevicesVMsListView(APIView):
+    renderer_classes = [JSONRenderer, BrowsableAPIRenderer, PlainTextRenderer]
+    # We need to have `queryset defined`. Otherwise, the following occurs:
+    # Cannot apply TokenPermissions on a view that does not set `.queryset` or have a `.get_queryset()` method.
+    # See https://github.com/encode/django-rest-framework/blob/
+    # 71e6c30034a1dd35a39ca74f86c371713e762c79/rest_framework/permissions.py#L207
+    #
+    # Therefore, we use Device as the model. This has the side effect that users
+    # with only Device permissions will be able to access VMs through this endpoint.
     queryset = Device.objects.all()
 
-    @ swagger_auto_schema(
+    @swagger_auto_schema(
         operation_description="Combined devices and virtual machines primary IPs list. "
         "Use only parameters common to both devices and VMs."
     )
