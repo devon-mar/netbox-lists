@@ -136,6 +136,7 @@ def nb_api():
         tags=[test_tag.id]
     )
     # A duplicate IP of test_device_1 but with a different prefix length.
+    # Used to test that duplicate IPs don't appear.
     test_device_2_intf_1_ip_2 = nb_create(
         api.ipam.ip_addresses,
         address="2001:db8::1/127",
@@ -181,6 +182,11 @@ def nb_api():
         name="eth0",
         virtual_machine=test_vm_1.id
     )
+    test_vm_1_intf_2 = nb_create(
+        api.virtualization.interfaces,
+        name="eth1",
+        virtual_machine=test_vm_1.id
+    )
     test_vm_1_intf_1_ip_1 = nb_create(
         api.ipam.ip_addresses,
         address="192.0.2.3/24",
@@ -192,6 +198,12 @@ def nb_api():
         address="2001:db8::3/128",
         assigned_object_type="virtualization.vminterface",
         assigned_object_id=test_vm_1_intf_1.id
+    )
+    test_vm_1_intf_2_ip_1 = nb_create(
+        api.ipam.ip_addresses,
+        address="192.0.2.4/24",
+        assigned_object_type="virtualization.vminterface",
+        assigned_object_id=test_vm_1_intf_2.id
     )
     # This service has no assigned IPs.
     test_device_2_svc_1 = nb_create(
@@ -232,19 +244,19 @@ def nb_api():
         #
         (
             "http://localhost:8000/api/plugins/lists/ip-addresses?as_cidr=false",
-            ["192.0.2.1", "192.0.2.2", "192.0.2.3", "2001:db8::1", "2001:db8::3"]
+            ["192.0.2.1", "192.0.2.2", "192.0.2.3", "192.0.2.4", "2001:db8::1", "2001:db8::3"]
         ),
         (
             "http://localhost:8000/api/plugins/lists/ip-addresses?as_cidr=true",
-            ["192.0.2.1/32", "192.0.2.2/32", "192.0.2.3/32", "2001:db8::1/128", "2001:db8::3/128"]
+            ["192.0.2.1/32", "192.0.2.2/32", "192.0.2.3/32", "192.0.2.4/32", "2001:db8::1/128", "2001:db8::3/128"]
         ),
         (
             "http://localhost:8000/api/plugins/lists/ip-addresses?family=4",
-            ["192.0.2.1/32", "192.0.2.2/32", "192.0.2.3/32"]
+            ["192.0.2.1/32", "192.0.2.2/32", "192.0.2.3/32", "192.0.2.4/32"]
         ),
         (
             "http://localhost:8000/api/plugins/lists/ip-addresses?family=4&as_cidr=false",
-            ["192.0.2.1", "192.0.2.2", "192.0.2.3"]
+            ["192.0.2.1", "192.0.2.2", "192.0.2.3", "192.0.2.4"]
         ),
         #
         # Prefixes
@@ -327,7 +339,11 @@ def nb_api():
             "http://localhost:8000/api/plugins/lists/devices-vms?as_cidr=true&name=Test Device 1&family=4",
             ["192.0.2.1/32"]
         ),
-        # Test a tag containing only devices
+        #
+        # Tags
+        #
+        # NOTE: IPs should always be returned as /32s or /128s
+        # Test a tag containing only device 1
         ("http://localhost:8000/api/plugins/lists/tags/test-device-tag?devices", ["192.0.2.1/32", "2001:db8::1/128"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-device-tag?devices&family=4", ["192.0.2.1/32"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-device-tag?devices&family=6", ["2001:db8::1/128"]),
@@ -335,7 +351,9 @@ def nb_api():
         ("http://localhost:8000/api/plugins/lists/tags/test-device-tag?devices_primary", ["192.0.2.1/32", "2001:db8::1/128"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-device-tag?devices_primary&family=4", ["192.0.2.1/32"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-device-tag?devices_primary&family=6", ["2001:db8::1/128"]),
-        # NOTE: IPs should always be returned as /32s or /128s
+        # Should return only device 2 IPs
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?devices", ["192.0.2.2/32", "2001:db8::1/128"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?devices_primary", []),
         ("http://localhost:8000/api/plugins/lists/tags/test-tag?ips", ["192.0.2.2/32", "2001:db8::1/128"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-tag?ips&family=4", ["192.0.2.2/32"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-tag?ips&family=6", ["2001:db8::1/128"]),
@@ -345,6 +363,9 @@ def nb_api():
         ("http://localhost:8000/api/plugins/lists/tags/test-tag?prefixes", ["192.0.2.32/27", "2001:db8:2::/64"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-tag?prefixes&family=4", ["192.0.2.32/27"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-tag?prefixes&family=6", ["2001:db8:2::/64"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?vms", ["192.0.2.3/32", "192.0.2.4/32", "2001:db8::3/128"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?vms&family=4", ["192.0.2.3/32", "192.0.2.4/32"]),
+        ("http://localhost:8000/api/plugins/lists/tags/test-tag?vms&family=6", ["2001:db8::3/128"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-tag?vms_primary", ["192.0.2.3/32", "2001:db8::3/128"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-tag?vms_primary&family=4", ["192.0.2.3/32"]),
         ("http://localhost:8000/api/plugins/lists/tags/test-tag?vms_primary&family=6", ["2001:db8::3/128"]),
@@ -356,7 +377,47 @@ def nb_api():
         (
             "http://localhost:8000/api/plugins/lists/tags/test-tag?ips&aggregates&prefixes",
             ["192.0.2.2/32", "2001:db8::1/128", "172.16.0.0/12", "192.0.2.32/27", "2001:db8:2::/64", "2001:db8::/32"]
-        )
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/tags/test-device-tag?all",
+            # Should be the same as /tags/test-device-tag/?devices
+            ["192.0.2.1/32", "2001:db8::1/128"]
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/tags/test-device-tag?all_primary",
+            # Should be the same as /tags/test-device-tag/?devices_primary
+            ["192.0.2.1/32", "2001:db8::1/128"]
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/tags/test-tag?all",
+            [
+                # devices
+                "192.0.2.2/32", "2001:db8::1/128",  # Test Device 2 IPs
+                # ips - all device 2 IPs
+                # aggregates
+                "172.16.0.0/12", "2001:db8::/32",
+                # ?prefixes
+                "192.0.2.32/27", "2001:db8:2::/64",
+                # ?vms
+                "192.0.2.3/32", "192.0.2.4/32", "2001:db8::3/128",
+                # ?services - duplicate IPs so it shouldn't be included.
+            ]
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/tags/test-tag?all_primary",
+            [
+                # ?devices - None. Device 2 doesn't have any primary IPs set and device 1 has a different tag.
+                # ?ips
+                "192.0.2.2/32", "2001:db8::1/128",
+                # ?aggregates
+                "172.16.0.0/12", "2001:db8::/32",
+                # ?prefixes
+                "192.0.2.32/27", "2001:db8:2::/64",
+                # ?vms
+                "192.0.2.3/32", "2001:db8::3/128",
+                # ?services - duplicate so it shouldn't be included.
+            ]
+        ),
     ]
 )
 def test_lists(nb_api, nb_requests: requests.Session, url: str, expected: List[str]):
@@ -384,9 +445,11 @@ def test_lists_txt(nb_api, nb_requests: requests.Session):
     assert sorted(with_header.text.splitlines()) == sorted(with_format.text.splitlines())
 
     assert sorted(with_header.text.splitlines()) == [
-        "192.0.2.1/32", "192.0.2.2/32", "192.0.2.3/32", "2001:db8::1/128", "2001:db8::3/128"
+        "192.0.2.1/32", "192.0.2.2/32", "192.0.2.3/32", "192.0.2.4/32", "2001:db8::1/128", "2001:db8::3/128"
     ]
-    assert sorted(ip_only.text.splitlines()) == ["192.0.2.1", "192.0.2.2", "192.0.2.3", "2001:db8::1", "2001:db8::3"]
+    assert sorted(ip_only.text.splitlines()) == [
+        "192.0.2.1", "192.0.2.2", "192.0.2.3", "192.0.2.4", "2001:db8::1", "2001:db8::3"
+    ]
 
 
 @pytest.mark.parametrize(

@@ -163,8 +163,22 @@ class TagsListViewSet(ListsBaseViewSet):
     lookup_field = "slug"
     lookup_value_regex = r"[-\w]+"
 
+    def param_all_any(self, request: Request, param: str) -> bool:
+        return (
+            param in request.query_params
+            or "all" in request.query_params
+            or "all_primary" in request.query_params
+        )
+
+    def param_all_primary(self, request: Request, param: str, primary: bool) -> bool:
+        return (
+            param in request.query_params
+            or ("all" in request.query_params and not primary)
+            or ("all_primary" in request.query_params and primary)
+        )
+
     def get_prefixes(self, tag: Tag, family: Union[int, None], request: Request) -> List[str]:
-        if "prefixes" not in request.query_params:
+        if not self.param_all_any(request, "prefixes"):
             return []
 
         if family == 4:
@@ -177,7 +191,7 @@ class TagsListViewSet(ListsBaseViewSet):
         return [str(i) for i in qs]
 
     def get_aggregates(self, tag: Tag, family: Union[int, None], request: Request) -> List[str]:
-        if "aggregates" not in request.query_params:
+        if not self.param_all_any(request, "aggregates"):
             return []
 
         if family == 4:
@@ -199,11 +213,11 @@ class TagsListViewSet(ListsBaseViewSet):
             family_filter = Q()
 
         ip_filters = []
-        if "ips" in request.query_params:
+        if self.param_all_any(request, "ips"):
             ip_filters.append(Q(tags=tag))
-        if "devices" in request.query_params:
+        if self.param_all_primary(request, "devices", False):
             ip_filters.append(Q(interface__device__tags=tag))
-        if "vms" in request.query_params:
+        if self.param_all_primary(request, "vms", False):
             ip_filters.append(Q(vminterface__virtual_machine__tags=tag))
 
         if len(ip_filters) > 0:
@@ -217,7 +231,7 @@ class TagsListViewSet(ListsBaseViewSet):
             return []
 
     def get_services(self, tag: Tag, family: Union[int, None], request: Request) -> List[str]:
-        if "services" not in request.query_params:
+        if not self.param_all_any(request, "services"):
             return []
 
         return get_service_ips(
@@ -228,7 +242,7 @@ class TagsListViewSet(ListsBaseViewSet):
         )
 
     def get_devices_primary(self, tag: Tag, family: Union[int, None], request) -> List[str]:
-        if "devices_primary" not in request.query_params:
+        if not self.param_all_primary(request, "devices_primary", True):
             return []
 
         return device_vm_primary_list(
@@ -238,7 +252,7 @@ class TagsListViewSet(ListsBaseViewSet):
         )
 
     def get_vms_primary(self, tag: Tag, family: Union[int, None], request) -> List[str]:
-        if "vms_primary" not in request.query_params:
+        if not self.param_all_primary(request, "vms_primary", True):
             return []
 
         return device_vm_primary_list(
@@ -247,7 +261,7 @@ class TagsListViewSet(ListsBaseViewSet):
             cidr=True
         )
 
-    @ swagger_auto_schema(manual_parameters=[
+    @swagger_auto_schema(manual_parameters=[
         openapi.Parameter(
             "prefixes", in_=openapi.IN_QUERY,
             description="Include prefixes", type=openapi.TYPE_BOOLEAN
@@ -283,6 +297,14 @@ class TagsListViewSet(ListsBaseViewSet):
         openapi.Parameter(
             "service_primary_ips", in_=openapi.IN_QUERY,
             description="Return Primary IPs if the service doesn't have any assigned IPs.", type=openapi.TYPE_BOOLEAN
+        ),
+        openapi.Parameter(
+            "all", in_=openapi.IN_QUERY,
+            description="Include ALL of the above options except *_primary.", type=openapi.TYPE_BOOLEAN
+        ),
+        openapi.Parameter(
+            "all_primary", in_=openapi.IN_QUERY,
+            description="Include ALL of the above options, using Device/VM primary IPs.", type=openapi.TYPE_BOOLEAN
         )
     ])
     def retrieve(self, request, slug=None) -> Response:
