@@ -18,6 +18,8 @@ This plugin also features endpoints for devices/VMs compatible with Prometheus' 
 
 * Users with only the `ipam | device` permission will be able to access VMs on the `devices-vms` endpoint.
 
+* This plugin uses NetBox's object permissions. Make sure users have the appropriate permissions.
+
 ## Installation
 1. Add `netbox-lists` to `local_requirements.txt`.
 2. Enable the plugin in `configuration.py`
