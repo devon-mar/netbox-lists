@@ -366,7 +366,7 @@ class PrometheusVirtualMachineSD(GenericViewSet):
 
     def _sd_vm(self, vm: VirtualMachine) -> dict:
         labels = {
-            "__meta_netbox_id": vm.id,
+            "__meta_netbox_id": str(vm.id),
             "__meta_netbox_name": vm.name,
             "__meta_netbox_status": vm.status,
             "__meta_netbox_cluster_name": vm.cluster.name,
@@ -378,7 +378,7 @@ class PrometheusVirtualMachineSD(GenericViewSet):
             "__meta_netbox_primary_ip6": str(vm.primary_ip6.address.ip) if vm.primary_ip6 else ""
         }
         for k, v in vm.custom_field_data.items():
-            labels[f"__meta_netbox_cf_{k}"] = v
+            labels[f"__meta_netbox_cf_{k}"] = str(v)
 
         return {
             "targets": [str(vm.primary_ip.address.ip) if vm.primary_ip else vm.name],
