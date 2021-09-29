@@ -160,8 +160,7 @@ class DevicesVMsListView(APIView):
     # See https://github.com/encode/django-rest-framework/blob/
     # 71e6c30034a1dd35a39ca74f86c371713e762c79/rest_framework/permissions.py#L207
     #
-    # Therefore, we use Device as the model. This has the side effect that users
-    # with only Device permissions will be able to access VMs through this endpoint.
+    # Therefore, we use Device as the model.
     queryset = Device.objects.all()
 
     @swagger_auto_schema(
@@ -210,7 +209,7 @@ class TagsListViewSet(ListsBaseViewSet):
             family_filter = Q(prefix__family=6)
         else:
             family_filter = Q()
-        qs = Prefix.objects.restrict(request.uesr, "view").filter(
+        qs = Prefix.objects.restrict(request.user, "view").filter(
             Q(tags=tag) & family_filter
         ).values_list("prefix", flat=True).distinct()
         return [str(i) for i in qs]
