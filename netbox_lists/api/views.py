@@ -53,6 +53,18 @@ class ListsRootView(APIRootView):
 class ListsBaseViewSet(GenericViewSet):
     renderer_classes = [JSONRenderer, BrowsableAPIRenderer, PlainTextRenderer]
 
+    # Adapted from
+    # https://github.com/netbox-community/netbox/blob/a33e47780b42f49f4ea536bace1617fa7dda31ab/
+    # netbox/netbox/api/views.py#L179
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+
+        if not request.user.is_authenticated:
+            return
+
+        # Restrict the view's QuerySet to allow only the permitted objects
+        self.queryset = self.queryset.restrict(request.user, "view")
+
 
 class ValuesListViewSet(ListsBaseViewSet):
 
@@ -159,8 +171,11 @@ class DevicesVMsListView(APIView):
     def get(self, request: Request) -> Response:
         family = get_family_param(request)
         as_cidr = get_as_cidr(request)
-        devices_fs = DeviceFilterSet(request.query_params, queryset=Device.objects.all())
-        vms_fs = VirtualMachineFilterSet(request.query_params, queryset=VirtualMachine.objects.all())
+        devices_fs = DeviceFilterSet(request.query_params, queryset=Device.objects.restrict(request.user, "view").all())
+        vms_fs = VirtualMachineFilterSet(
+            request.query_params,
+            queryset=VirtualMachine.objects.restrict(request.user, "view").all()
+        )
         devices = device_vm_primary_list(devices_fs.qs, family, as_cidr)
         vms = device_vm_primary_list(vms_fs.qs, family, as_cidr)
         return make_response(devices + vms)
@@ -195,7 +210,9 @@ class TagsListViewSet(ListsBaseViewSet):
             family_filter = Q(prefix__family=6)
         else:
             family_filter = Q()
-        qs = Prefix.objects.filter(Q(tags=tag) & family_filter).values_list("prefix", flat=True).distinct()
+        qs = Prefix.objects.restrict(request.uesr, "view").filter(
+            Q(tags=tag) & family_filter
+        ).values_list("prefix", flat=True).distinct()
         return [str(i) for i in qs]
 
     def get_aggregates(self, tag: Tag, family: Union[int, None], request: Request) -> List[str]:
@@ -209,7 +226,9 @@ class TagsListViewSet(ListsBaseViewSet):
         else:
             family_filter = Q()
 
-        qs = Aggregate.objects.filter(Q(tags=tag) & family_filter).values_list("prefix", flat=True).distinct()
+        qs = Aggregate.objects.restrict(request.user, "view").filter(
+            Q(tags=tag) & family_filter
+        ).values_list("prefix", flat=True).distinct()
         return [str(i) for i in qs]
 
     def get_ips(self, tag: Tag, family: Union[int, None], request: Request) -> List[str]:
@@ -231,7 +250,7 @@ class TagsListViewSet(ListsBaseViewSet):
         if len(ip_filters) > 0:
             return [
                 format_ipn(i, True)
-                for i in IPAddress.objects.filter(
+                for i in IPAddress.objects.restrict(request.user, "view").filter(
                     reduce(operator.or_, ip_filters) & family_filter
                 ).values_list("address", flat=True).distinct()
             ]
@@ -243,28 +262,28 @@ class TagsListViewSet(ListsBaseViewSet):
             return []
 
         return get_service_ips(
-            Service.objects.filter(tags=tag),
+            Service.objects.restrict(request.user, "view").filter(tags=tag),
             True,
             family,
             get_svc_primary_ips_param("service_primary_ips", request)
         )
 
-    def get_devices_primary(self, tag: Tag, family: Union[int, None], request) -> List[str]:
+    def get_devices_primary(self, tag: Tag, family: Union[int, None], request: Request) -> List[str]:
         if not self.param_all_primary(request, "devices_primary", True):
             return []
 
         return device_vm_primary_list(
-            Device.objects.filter(tags=tag),
+            Device.objects.restrict(request.user, "view").filter(tags=tag),
             family,
             cidr=True
         )
 
-    def get_vms_primary(self, tag: Tag, family: Union[int, None], request) -> List[str]:
+    def get_vms_primary(self, tag: Tag, family: Union[int, None], request: Request) -> List[str]:
         if not self.param_all_primary(request, "vms_primary", True):
             return []
 
         return device_vm_primary_list(
-            VirtualMachine.objects.filter(tags=tag),
+            VirtualMachine.objects.restrict(request.user, "view").filter(tags=tag),
             family,
             cidr=True
         )
