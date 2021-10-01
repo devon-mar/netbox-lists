@@ -10,6 +10,8 @@ pfSesnse/OPNSense's firewall aliases.
 
 This plugin also features endpoints for devices/VMs compatible with Prometheus' http_sd.
 
+This plugin supports NetBox v2.11 and v3.0.
+
 ## Documentation
 * API documentation can be found in NetBox's builtin API docs (`/api/docs/`).
 
@@ -54,17 +56,23 @@ https://netbox.example.com/api/plugins/lists/devices/?tag=test
 https://netbox.example.com/api/plugins/lists/devices/?tag=test&format=text
 ```
 
-3. Get all IP addresses for devices with the tag `test` in plain text.
+3. Get all IP addresses assigned to services named `NTP`.
 ```
-https://netbox.example.com/api/plugins/lists/devices/?tag=test&format=text
+https://netbox.example.com/api/plugins/lists/services/?name=NTP
 ```
 
-3. Get all IPv6 addresses for devices with the tag `test` in plain text.
+4. Get all IP addresses assigned to services named `NTP` and use the assigned device's primary IPs when no IPs
+are explicitly configured on the service.
+```
+https://netbox.example.com/api/plugins/lists/services/?name=NTP&primary_ips=true
+```
+
+5. Get all IPv6 addresses for devices with the tag `test` in plain text.
 ```
 https://netbox.example.com/api/plugins/lists/devices/?tag=test&family=6
 ```
 
-4. Get all prefixes and IPs with the tag `internal`
+6. Get all prefixes and IPs with the tag `internal`
 ```
 https://netbox.example.com/api/plugins/lists/tags/internal/?ips&prefixes
 ```
