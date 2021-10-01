@@ -104,7 +104,8 @@ class ServiceListviewSet(ValuesListViewSet):
         AS_CIDR_PARAM,
         openapi.Parameter(
             "primary_ips", in_=openapi.IN_QUERY,
-            description="Return Primary IPs if the service doesn't have any assigned IPs.", type=openapi.TYPE_BOOLEAN
+            description="Return Primary IPs if the service doesn't have any assigned IPs.",
+            type=openapi.TYPE_BOOLEAN
         )
     ])
     def list(self, request: Request) -> Response:
