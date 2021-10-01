@@ -583,6 +583,7 @@ def test_prom_sd(nb_api, nb_requests: requests.Session, url: str, expected: List
             if k not in have["labels"]:
                 pytest.fail(f"Label {k} is missing for {want['targets']}")
             assert have["labels"][k] == v, f"Target {want['targets']}"
+            assert isinstance(have["labels"][k], str)
 
 
 def test_tags_404(nb_api, nb_requests: requests.Session):
