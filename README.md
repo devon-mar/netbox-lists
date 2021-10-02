@@ -12,6 +12,19 @@ This plugin also features endpoints for devices/VMs compatible with Prometheus' 
 
 This plugin supports NetBox v2.11 and v3.0.
 
+## Features
+* Supports NetBox's object permissions.
+
+* Prometheus http_sd endpoint for devices/vms.
+
+* API documented using OpenAPI.
+
+* Supports standard NetBox object filters.
+
+* Address family specific prefix length filters.
+
+* JSON and text output formats.
+
 ## Documentation
 * API documentation can be found in NetBox's builtin API docs (`/api/docs/`).
 
