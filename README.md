@@ -31,8 +31,6 @@ This plugin supports NetBox v2.11 and v3.0.
 * The format of the response can be controlled by the `Accept` header (`application/json` or `text/plain`)
   or by the appending `format=(text|json)` to the URL.
 
-* Users with only the `ipam | device` permission will be able to access VMs on the `devices-vms` endpoint.
-
 * This plugin uses NetBox's object permissions. Make sure users have the appropriate permissions.
 
 ## Installation
