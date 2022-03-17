@@ -1,4 +1,4 @@
-__version__ = '0.1.0'
+__version__ = "0.1.0"
 
 from extras.plugins import PluginConfig
 
@@ -10,10 +10,7 @@ class ListsPluginConfig(PluginConfig):
     author = "Devon Mar"
     base_url = "lists"
     required_settings = []
-    default_settings = {
-        "as_cidr": True,
-        "service_primary_ips": True
-    }
+    default_settings = {"as_cidr": True, "service_primary_ips": True}
 
 
 config = ListsPluginConfig

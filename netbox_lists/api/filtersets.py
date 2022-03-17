@@ -1,33 +1,27 @@
+import django_filters
 from django.db.models import Q
 from ipam.filtersets import PrefixFilterSet
-import django_filters
 
 
 class CustomPrefixFilterSet(PrefixFilterSet):
     mask_length4 = django_filters.NumberFilter(
-        field_name='prefix',
-        method="filter_mask_length4"
+        field_name="prefix", method="filter_mask_length4"
     )
     mask_length4__lte = django_filters.NumberFilter(
-        field_name='prefix',
-        method="filter_mask_length4__lte"
+        field_name="prefix", method="filter_mask_length4__lte"
     )
     mask_length4__gte = django_filters.NumberFilter(
-        field_name='prefix',
-        method="filter_mask_length4__gte"
+        field_name="prefix", method="filter_mask_length4__gte"
     )
 
     mask_length6 = django_filters.NumberFilter(
-        field_name='prefix',
-        method="filter_mask_length6"
+        field_name="prefix", method="filter_mask_length6"
     )
     mask_length6__lte = django_filters.NumberFilter(
-        field_name='prefix',
-        method="filter_mask_length6__lte"
+        field_name="prefix", method="filter_mask_length6__lte"
     )
     mask_length6__gte = django_filters.NumberFilter(
-        field_name='prefix',
-        method="filter_mask_length6__gte"
+        field_name="prefix", method="filter_mask_length6__gte"
     )
 
     def _generic_mask_filter(self, queryset, op, family, val):

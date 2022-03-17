@@ -1,8 +1,9 @@
 from typing import List
-import requests
+
 import pynetbox
-from pynetbox.core import endpoint, response
 import pytest
+import requests
+from pynetbox.core import endpoint, response
 
 nb_objects: List[response.Record] = []
 
