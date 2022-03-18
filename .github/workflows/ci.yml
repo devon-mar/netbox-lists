@@ -36,12 +36,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - container_tag: v2.11
-            netbox_docker_tag: 1.2.0
           - container_tag: v3.0
             netbox_docker_tag: 1.4.1
           - container_tag: v3.1
             netbox_docker_tag: 1.4.1
+          - container_tag: v3.2-beta2
+            netbox_docker_tag: 1.6.0
 
     runs-on: ubuntu-latest
     steps:
