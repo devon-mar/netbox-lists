@@ -1,7 +1,7 @@
 import itertools
 import operator
 from functools import reduce
-from typing import Iterable, List, Union
+from typing import Iterable, Union
 
 import netaddr
 from dcim.filtersets import DeviceFilterSet
@@ -17,7 +17,7 @@ from ipam.filtersets import (
     ServiceFilterSet,
 )
 from ipam.models import Aggregate, IPAddress, IPRange, Prefix, Service
-from netaddr import cidr_merge, IPNetwork
+from netaddr import IPNetwork
 from rest_framework import status
 from rest_framework.generics import get_object_or_404
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
