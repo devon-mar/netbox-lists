@@ -55,6 +55,9 @@ def nb_api():
     test_device_tag = nb_create(
         api.extras.tags, name="Test Device Tag", slug="test-device-tag"
     )
+    test_range_tag = nb_create(
+        api.extras.tags, name="Test range tag", slug="test-range-tag"
+    )
     test_site = nb_create(api.dcim.sites, name="Test Site", slug="test-site")
     test_device_role = nb_create(
         api.dcim.device_roles, name="Test Role", slug="test-role"
@@ -228,6 +231,26 @@ def nb_api():
     test_aggregate_3 = nb_create(
         api.ipam.aggregates, prefix="2001:db8::/32", rir=test_rir.id, tags=[test_tag.id]
     )
+    test_range_1 = nb_create(
+        api.ipam.ip_ranges,
+        start_address="198.51.100.10/24",
+        end_address="198.51.100.99/24",
+    )
+    test_range_2 = nb_create(
+        api.ipam.ip_ranges,
+        start_address="198.51.100.100/24",
+        end_address="198.51.100.127/24",
+    )
+    test_range_3 = nb_create(
+        api.ipam.ip_ranges,
+        start_address="2001:db8:f00d::100/64",
+        end_address="2001:db8:f00d::203/64",
+    )
+    test_range_4 = nb_create(
+        api.ipam.ip_ranges,
+        start_address="2001:db8:f00d::204/64",
+        end_address="2001:db8:f00d::23f/64",
+    )
 
     yield api
     nb_cleanup()
@@ -282,6 +305,88 @@ def nb_api():
         (
             "http://localhost:8000/api/plugins/lists/ip-addresses?family=4&as_cidr=false&summarize=false",
             ["192.0.2.1", "192.0.2.2", "192.0.2.3", "192.0.2.4"],
+        ),
+        #
+        # IP Ranges
+        #
+        (
+            "http://localhost:8000/api/plugins/lists/ip-ranges",
+            [
+                "198.51.100.10/31",
+                "198.51.100.12/30",
+                "198.51.100.16/28",
+                "198.51.100.32/27",
+                "198.51.100.64/26",
+                "2001:db8:f00d::100/120",
+                "2001:db8:f00d::200/122",
+            ],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/ip-ranges?summarize=false",
+            [
+                # First Range
+                "198.51.100.10/31",
+                "198.51.100.12/30",
+                "198.51.100.16/28",
+                "198.51.100.32/27",
+                "198.51.100.64/27",
+                "198.51.100.96/30",
+                # Second range
+                "198.51.100.100/30",
+                "198.51.100.104/29",
+                "198.51.100.112/28",
+                # IP Range 3
+                "2001:db8:f00d::100/120",
+                "2001:db8:f00d::200/126",
+                # IP Range 4
+                "2001:db8:f00d::204/126",
+                "2001:db8:f00d::208/125",
+                "2001:db8:f00d::210/124",
+                "2001:db8:f00d::220/123",
+            ],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/ip-ranges?family=6",
+            ["2001:db8:f00d::100/120", "2001:db8:f00d::200/122"],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/ip-ranges?family=6&summarize=false",
+            [
+                # IP Range 3
+                "2001:db8:f00d::100/120",
+                "2001:db8:f00d::200/126",
+                # IP Range 4
+                "2001:db8:f00d::204/126",
+                "2001:db8:f00d::208/125",
+                "2001:db8:f00d::210/124",
+                "2001:db8:f00d::220/123",
+            ],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/ip-ranges?family=4&summarize=false",
+            [
+                # First Range
+                "198.51.100.10/31",
+                "198.51.100.12/30",
+                "198.51.100.16/28",
+                "198.51.100.32/27",
+                "198.51.100.64/27",
+                "198.51.100.96/30",
+                # Second range
+                "198.51.100.100/30",
+                "198.51.100.104/29",
+                "198.51.100.112/28",
+            ],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/ip-ranges?family=4",
+            [
+                "198.51.100.10/31",
+                "198.51.100.12/30",
+                "198.51.100.16/28",
+                "198.51.100.32/27",
+                "198.51.100.64/26",
+            ],
         ),
         #
         # Prefixes

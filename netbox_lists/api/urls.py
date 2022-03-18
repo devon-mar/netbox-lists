@@ -6,6 +6,7 @@ from .views import (
     DevicesListViewSet,
     DevicesVMsListView,
     IPAddressListViewSet,
+    IPRangeListViewSet,
     ListsRootView,
     PrefixListViewSet,
     PrometheusDeviceSD,
@@ -20,6 +21,7 @@ router.APIRootView = ListsRootView
 
 router.register("prefixes", PrefixListViewSet)
 router.register("ip-addresses", IPAddressListViewSet)
+router.register("ip-ranges", IPRangeListViewSet)
 router.register("aggregates", AggregateListViewSet)
 router.register("services", ServiceListviewSet)
 router.register("tags", TagsListViewSet)

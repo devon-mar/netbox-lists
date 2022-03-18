@@ -4,7 +4,7 @@ from typing import Any, Iterable, List, Union
 from django.conf import settings
 from django.db.models import Q
 from django.db.models.query import QuerySet
-from netaddr import IPNetwork, cidr_merge
+from netaddr import cidr_merge, IPNetwork, iprange_to_cidrs
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -167,3 +167,7 @@ def get_summarize_param(req: Request) -> bool:
         return False
     else:
         raise ValidationError("summarize must be true or false.")
+
+
+def ip_range_prefixes(start: IPNetwork, end: IPNetwork) -> List[IPNetwork]:
+    return iprange_to_cidrs(start.ip, end.ip)

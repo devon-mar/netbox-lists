@@ -10,10 +10,14 @@ from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from extras.models import Tag
-from ipam.filtersets import AggregateFilterSet, IPAddressFilterSet, ServiceFilterSet
-from ipam.models import Aggregate, IPAddress, Prefix, Service
-from netaddr import IPNetwork, cidr_merge
-from netbox_lists.api.filtersets import CustomPrefixFilterSet
+from ipam.filtersets import (
+    AggregateFilterSet,
+    IPAddressFilterSet,
+    IPRangeFilterSet,
+    ServiceFilterSet,
+)
+from ipam.models import Aggregate, IPAddress, IPRange, Prefix, Service
+from netaddr import cidr_merge, IPNetwork
 from rest_framework import status
 from rest_framework.generics import get_object_or_404
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
@@ -25,6 +29,8 @@ from rest_framework.viewsets import GenericViewSet
 from virtualization.filtersets import VirtualMachineFilterSet
 from virtualization.models import VirtualMachine
 
+from netbox_lists.api.filtersets import CustomPrefixFilterSet
+
 from .constants import AS_CIDR_PARAM_NAME, FAMILY_PARAM_NAME, SUMMARIZE_PARAM_NAME
 from .renderers import PlainTextRenderer
 from .utils import (
@@ -34,6 +40,7 @@ from .utils import (
     get_service_ips,
     get_summarize_param,
     get_svc_primary_ips_param,
+    iprange_to_cidrs,
     make_ip_list_response,
     set_prefixlen_max,
 )
@@ -232,6 +239,24 @@ class DevicesVMsListView(APIView):
         vms = device_vm_primary_list(vms_fs.qs, family)
         return make_ip_list_response(
             itertools.chain(devices, vms), summarize, use_net_ip=not as_cidr
+        )
+
+
+class IPRangeListViewSet(ListsBaseViewSet):
+    queryset = IPRange.objects.all()
+    filterset_class = IPRangeFilterSet
+
+    @swagger_auto_schema(
+        operation_description="Returns a list of CIDRs for each range.",
+        manual_parameters=[SUMMARIZE_PARAM],
+    )
+    def list(self, request: Request) -> Response:
+        queryset = self.filter_queryset(self.get_queryset())
+        return make_ip_list_response(
+            itertools.chain.from_iterable(
+                iprange_to_cidrs(r.start_address.ip, r.end_address.ip) for r in queryset
+            ),
+            get_summarize_param(request),
         )
 
 
