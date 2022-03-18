@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 from django.utils.encoding import smart_str
 from rest_framework.renderers import BaseRenderer
 
@@ -9,6 +11,6 @@ class PlainTextRenderer(BaseRenderer):
     format = "text"
 
     def render(self, data, media_type=None, renderer_context=None):
-        if isinstance(data, list):
+        if isinstance(data, Iterable):
             return smart_str("\n".join(data), encoding=self.charset)
         return smart_str(data, encoding=self.charset)

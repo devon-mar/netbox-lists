@@ -89,27 +89,11 @@ class ListsBaseViewSet(GenericViewSet):
 
 class ValuesListViewSet(ListsBaseViewSet):
     @swagger_auto_schema(manual_parameters=[SUMMARIZE_PARAM])
-    def list(
-        self, request: Request, use_ip: bool = False, as_cidr: bool = False
-    ) -> Response:
+    def list(self, request: Request, use_net_ip: bool = False) -> Response:
         queryset = self.filter_queryset(self.get_queryset())
-
-        ret: List[str]
-        if len(queryset) == 0:
-            ret = []
-        elif get_summarize_param(request):
-            if isinstance(queryset[0], IPNetwork) and use_ip is True:
-                ret = [str(i) for i in cidr_merge([network.ip for network in queryset])]
-            else:
-                ret = [str(i) for i in cidr_merge([str(i) for i in queryset])]
-        elif use_ip is True and as_cidr is False:
-            ret = [str(i.ip) for i in queryset]
-        elif use_ip is True:
-            ret = [str(i.ip) + ("/32" if i.version == 4 else "/128") for i in queryset]
-        else:
-            ret = [str(i) for i in queryset]
-
-        return Response(list(set(ret)))
+        return make_ip_list_response(
+            queryset, get_summarize_param(request), use_net_ip=use_net_ip
+        )
 
 
 class PrefixListViewSet(ValuesListViewSet):
@@ -122,16 +106,21 @@ class AggregateListViewSet(ValuesListViewSet):
     filterset_class = AggregateFilterSet
 
 
-class IPAddressListViewSet(ValuesListViewSet):
+class IPAddressListViewSet(ListsBaseViewSet):
     queryset = IPAddress.objects.values_list("address", flat=True).distinct()
     filterset_class = IPAddressFilterSet
 
     @swagger_auto_schema(manual_parameters=[AS_CIDR_PARAM])
     def list(self, request) -> Response:
-        return super().list(request, use_ip=True, as_cidr=get_as_cidr_param(request))
+        queryset = self.filter_queryset(self.get_queryset())
+        return make_ip_list_response(
+            (set_prefixlen_max(i) for i in queryset),
+            get_summarize_param(request),
+            use_net_ip=not get_as_cidr_param(request),
+        )
 
 
-class ServiceListviewSet(ValuesListViewSet):
+class ServiceListviewSet(ListsBaseViewSet):
     queryset = Service.objects.all()
     filterset_class = ServiceFilterSet
 
@@ -161,7 +150,7 @@ class ServiceListviewSet(ValuesListViewSet):
         )
 
 
-class DevicesListViewSet(ValuesListViewSet):
+class DevicesListViewSet(ListsBaseViewSet):
     queryset = Device.objects.all()
     filterset_class = DeviceFilterSet
 
@@ -184,7 +173,7 @@ class DevicesListViewSet(ValuesListViewSet):
         )
 
 
-class VirtualMachinesListViewSet(ValuesListViewSet):
+class VirtualMachinesListViewSet(ListsBaseViewSet):
     queryset = VirtualMachine.objects.all()
     filterset_class = VirtualMachineFilterSet
 
