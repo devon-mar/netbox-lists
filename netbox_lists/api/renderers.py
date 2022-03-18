@@ -1,4 +1,4 @@
-from django.utils.encoding import smart_text
+from django.utils.encoding import smart_str
 from rest_framework.renderers import BaseRenderer
 
 
@@ -10,5 +10,5 @@ class PlainTextRenderer(BaseRenderer):
 
     def render(self, data, media_type=None, renderer_context=None):
         if isinstance(data, list):
-            return smart_text("\n".join(data), encoding=self.charset)
-        return smart_text(data, encoding=self.charset)
+            return smart_str("\n".join(data), encoding=self.charset)
+        return smart_str(data, encoding=self.charset)
