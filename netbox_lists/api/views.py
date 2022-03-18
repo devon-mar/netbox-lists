@@ -1,7 +1,9 @@
+import itertools
 import operator
 from functools import reduce
-from typing import List, Union
+from typing import Iterable, List, Union
 
+import netaddr
 from dcim.filtersets import DeviceFilterSet
 from dcim.models import Device
 from django.db.models import Q
@@ -10,6 +12,7 @@ from drf_yasg.utils import swagger_auto_schema
 from extras.models import Tag
 from ipam.filtersets import AggregateFilterSet, IPAddressFilterSet, ServiceFilterSet
 from ipam.models import Aggregate, IPAddress, Prefix, Service
+from netaddr import IPNetwork, cidr_merge
 from netbox_lists.api.filtersets import CustomPrefixFilterSet
 from rest_framework import status
 from rest_framework.generics import get_object_or_404
@@ -22,16 +25,17 @@ from rest_framework.viewsets import GenericViewSet
 from virtualization.filtersets import VirtualMachineFilterSet
 from virtualization.models import VirtualMachine
 
-from .constants import AS_CIDR_PARAM_NAME, FAMILY_PARAM_NAME
+from .constants import AS_CIDR_PARAM_NAME, FAMILY_PARAM_NAME, SUMMARIZE_PARAM_NAME
 from .renderers import PlainTextRenderer
 from .utils import (
     device_vm_primary_list,
-    format_ipn,
-    get_as_cidr,
+    get_as_cidr_param,
     get_family_param,
     get_service_ips,
+    get_summarize_param,
     get_svc_primary_ips_param,
-    make_response,
+    make_ip_list_response,
+    set_prefixlen_max,
 )
 
 FAMILY_PARAM = openapi.Parameter(
@@ -45,6 +49,12 @@ AS_CIDR_PARAM = openapi.Parameter(
     AS_CIDR_PARAM_NAME,
     in_=openapi.IN_QUERY,
     description="Return IPs as /32 or /128",
+    type=openapi.TYPE_BOOLEAN,
+)
+SUMMARIZE_PARAM = openapi.Parameter(
+    SUMMARIZE_PARAM_NAME,
+    in_=openapi.IN_QUERY,
+    description="Summarize the IPs/Prefixes before returning them.",
     type=openapi.TYPE_BOOLEAN,
 )
 
@@ -71,10 +81,28 @@ class ListsBaseViewSet(GenericViewSet):
 
 
 class ValuesListViewSet(ListsBaseViewSet):
-    def list(self, request: Request) -> Response:
+    @swagger_auto_schema(manual_parameters=[SUMMARIZE_PARAM])
+    def list(
+        self, request: Request, use_ip: bool = False, as_cidr: bool = False
+    ) -> Response:
         queryset = self.filter_queryset(self.get_queryset())
 
-        return Response([str(i) for i in queryset])
+        ret: List[str]
+        if len(queryset) == 0:
+            ret = []
+        elif get_summarize_param(request):
+            if isinstance(queryset[0], IPNetwork) and use_ip is True:
+                ret = [str(i) for i in cidr_merge([network.ip for network in queryset])]
+            else:
+                ret = [str(i) for i in cidr_merge([str(i) for i in queryset])]
+        elif use_ip is True and as_cidr is False:
+            ret = [str(i.ip) for i in queryset]
+        elif use_ip is True:
+            ret = [str(i.ip) + ("/32" if i.version == 4 else "/128") for i in queryset]
+        else:
+            ret = [str(i) for i in queryset]
+
+        return Response(list(set(ret)))
 
 
 class PrefixListViewSet(ValuesListViewSet):
@@ -92,20 +120,18 @@ class IPAddressListViewSet(ValuesListViewSet):
     filterset_class = IPAddressFilterSet
 
     @swagger_auto_schema(manual_parameters=[AS_CIDR_PARAM])
-    def list(self, request):
-        queryset = self.filter_queryset(self.get_queryset())
-
-        return make_response([format_ipn(i, get_as_cidr(request)) for i in queryset])
+    def list(self, request) -> Response:
+        return super().list(request, use_ip=True, as_cidr=get_as_cidr_param(request))
 
 
 class ServiceListviewSet(ValuesListViewSet):
     queryset = Service.objects.all()
-
     filterset_class = ServiceFilterSet
 
     @swagger_auto_schema(
         manual_parameters=[
             AS_CIDR_PARAM,
+            SUMMARIZE_PARAM,
             openapi.Parameter(
                 "primary_ips",
                 in_=openapi.IN_QUERY,
@@ -115,12 +141,17 @@ class ServiceListviewSet(ValuesListViewSet):
         ]
     )
     def list(self, request: Request) -> Response:
-        as_cidr = get_as_cidr(request)
+        as_cidr = get_as_cidr_param(request)
         family = get_family_param(request)
+        summarize = get_summarize_param(request)
         primary_ips = get_svc_primary_ips_param("primary_ips", request)
 
         qs = self.filter_queryset(self.get_queryset())
-        return make_response(get_service_ips(qs, as_cidr, family, primary_ips))
+        return make_ip_list_response(
+            get_service_ips(qs, family, primary_ips),
+            summarize,
+            use_net_ip=not as_cidr,
+        )
 
 
 class DevicesListViewSet(ValuesListViewSet):
@@ -129,18 +160,20 @@ class DevicesListViewSet(ValuesListViewSet):
 
     @swagger_auto_schema(
         operation_description="Returns the primary IPs of devices.",
-        manual_parameters=[AS_CIDR_PARAM, FAMILY_PARAM],
+        manual_parameters=[AS_CIDR_PARAM, FAMILY_PARAM, SUMMARIZE_PARAM],
     )
     def list(self, request: Request) -> Response:
-
         family = get_family_param(request)
+        as_cidr = get_as_cidr_param(request)
+        summarize = get_summarize_param(request)
 
-        return Response(
+        return make_ip_list_response(
             device_vm_primary_list(
                 self.filter_queryset((self.get_queryset())),
                 family,
-                cidr=get_as_cidr(request),
-            )
+            ),
+            summarize,
+            use_net_ip=not as_cidr,
         )
 
 
@@ -154,13 +187,16 @@ class VirtualMachinesListViewSet(ValuesListViewSet):
     )
     def list(self, request: Request) -> Response:
         family = get_family_param(request)
+        as_cidr = get_as_cidr_param(request)
+        summarize = get_summarize_param(request)
 
-        return Response(
+        return make_ip_list_response(
             device_vm_primary_list(
                 self.filter_queryset((self.get_queryset())),
                 family,
-                cidr=get_as_cidr(request),
-            )
+            ),
+            summarize,
+            use_net_ip=not as_cidr,
         )
 
 
@@ -176,11 +212,14 @@ class DevicesVMsListView(APIView):
 
     @swagger_auto_schema(
         operation_description="Combined devices and virtual machines primary IPs list. "
-        "Use only parameters common to both devices and VMs."
+        "Use only parameters common to both devices and VMs.",
+        manual_parameters=[SUMMARIZE_PARAM],
     )
     def get(self, request: Request) -> Response:
         family = get_family_param(request)
-        as_cidr = get_as_cidr(request)
+        as_cidr = get_as_cidr_param(request)
+        summarize = get_summarize_param(request)
+
         devices_fs = DeviceFilterSet(
             request.query_params,
             queryset=Device.objects.restrict(request.user, "view").all(),
@@ -189,9 +228,11 @@ class DevicesVMsListView(APIView):
             request.query_params,
             queryset=VirtualMachine.objects.restrict(request.user, "view").all(),
         )
-        devices = device_vm_primary_list(devices_fs.qs, family, as_cidr)
-        vms = device_vm_primary_list(vms_fs.qs, family, as_cidr)
-        return make_response(devices + vms)
+        devices = device_vm_primary_list(devices_fs.qs, family)
+        vms = device_vm_primary_list(vms_fs.qs, family)
+        return make_ip_list_response(
+            itertools.chain(devices, vms), summarize, use_net_ip=not as_cidr
+        )
 
 
 class TagsListViewSet(ListsBaseViewSet):
@@ -215,7 +256,7 @@ class TagsListViewSet(ListsBaseViewSet):
 
     def get_prefixes(
         self, tag: Tag, family: Union[int, None], request: Request
-    ) -> List[str]:
+    ) -> Iterable[IPNetwork]:
         if not self.param_all_any(request, "prefixes"):
             return []
 
@@ -225,17 +266,16 @@ class TagsListViewSet(ListsBaseViewSet):
             family_filter = Q(prefix__family=6)
         else:
             family_filter = Q()
-        qs = (
+        return (
             Prefix.objects.restrict(request.user, "view")
             .filter(Q(tags=tag) & family_filter)
             .values_list("prefix", flat=True)
             .distinct()
         )
-        return [str(i) for i in qs]
 
     def get_aggregates(
         self, tag: Tag, family: Union[int, None], request: Request
-    ) -> List[str]:
+    ) -> Iterable[IPNetwork]:
         if not self.param_all_any(request, "aggregates"):
             return []
 
@@ -246,17 +286,16 @@ class TagsListViewSet(ListsBaseViewSet):
         else:
             family_filter = Q()
 
-        qs = (
+        return (
             Aggregate.objects.restrict(request.user, "view")
             .filter(Q(tags=tag) & family_filter)
             .values_list("prefix", flat=True)
             .distinct()
         )
-        return [str(i) for i in qs]
 
     def get_ips(
         self, tag: Tag, family: Union[int, None], request: Request
-    ) -> List[str]:
+    ) -> Iterable[netaddr.IPNetwork]:
         if family == 4:
             family_filter = Q(address__family=4)
         elif family == 6:
@@ -273,55 +312,52 @@ class TagsListViewSet(ListsBaseViewSet):
             ip_filters.append(Q(vminterface__virtual_machine__tags=tag))
 
         if len(ip_filters) > 0:
-            return [
-                format_ipn(i, True)
+            return (
+                set_prefixlen_max(i)
                 for i in IPAddress.objects.restrict(request.user, "view")
                 .filter(reduce(operator.or_, ip_filters) & family_filter)
                 .values_list("address", flat=True)
                 .distinct()
-            ]
+            )
         else:
             return []
 
     def get_services(
         self, tag: Tag, family: Union[int, None], request: Request
-    ) -> List[str]:
+    ) -> Iterable[IPNetwork]:
         if not self.param_all_any(request, "services"):
             return []
 
         return get_service_ips(
             Service.objects.restrict(request.user, "view").filter(tags=tag),
-            True,
             family,
             get_svc_primary_ips_param("service_primary_ips", request),
         )
 
     def get_devices_primary(
         self, tag: Tag, family: Union[int, None], request: Request
-    ) -> List[str]:
+    ) -> Iterable[IPNetwork]:
         if not self.param_all_primary(request, "devices_primary", True):
             return []
 
         return device_vm_primary_list(
-            Device.objects.restrict(request.user, "view").filter(tags=tag),
-            family,
-            cidr=True,
+            Device.objects.restrict(request.user, "view").filter(tags=tag), family
         )
 
     def get_vms_primary(
         self, tag: Tag, family: Union[int, None], request: Request
-    ) -> List[str]:
+    ) -> Iterable[IPNetwork]:
         if not self.param_all_primary(request, "vms_primary", True):
             return []
 
         return device_vm_primary_list(
             VirtualMachine.objects.restrict(request.user, "view").filter(tags=tag),
             family,
-            cidr=True,
         )
 
     @swagger_auto_schema(
         manual_parameters=[
+            SUMMARIZE_PARAM,
             openapi.Parameter(
                 "prefixes",
                 in_=openapi.IN_QUERY,
@@ -396,6 +432,7 @@ class TagsListViewSet(ListsBaseViewSet):
 
         tag = get_object_or_404(Tag, slug=slug)
         family = get_family_param(request)
+
         prefixes = self.get_prefixes(tag, family, request)
         aggregates = self.get_aggregates(tag, family, request)
         ips = self.get_ips(tag, family, request)
@@ -403,8 +440,11 @@ class TagsListViewSet(ListsBaseViewSet):
         devices_primary = self.get_devices_primary(tag, family, request)
         vms_primary = self.get_vms_primary(tag, family, request)
 
-        return make_response(
-            prefixes + aggregates + ips + services + devices_primary + vms_primary
+        return make_ip_list_response(
+            itertools.chain(
+                prefixes, aggregates, ips, services, devices_primary, vms_primary
+            ),
+            get_summarize_param(request),
         )
 
 

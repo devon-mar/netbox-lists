@@ -240,7 +240,7 @@ def nb_api():
         # IP Address Test Cases
         #
         (
-            "http://localhost:8000/api/plugins/lists/ip-addresses?as_cidr=false",
+            "http://localhost:8000/api/plugins/lists/ip-addresses?as_cidr=false&summarize=false",
             [
                 "192.0.2.1",
                 "192.0.2.2",
@@ -251,11 +251,21 @@ def nb_api():
             ],
         ),
         (
+            # Summarize overrides as_cidr
+            "http://localhost:8000/api/plugins/lists/ip-addresses?as_cidr=false",
+            [
+                "192.0.2.1/32",
+                "192.0.2.2/31",
+                "192.0.2.4/32",
+                "2001:db8::1/128",
+                "2001:db8::3/128",
+            ],
+        ),
+        (
             "http://localhost:8000/api/plugins/lists/ip-addresses?as_cidr=true",
             [
                 "192.0.2.1/32",
-                "192.0.2.2/32",
-                "192.0.2.3/32",
+                "192.0.2.2/31",
                 "192.0.2.4/32",
                 "2001:db8::1/128",
                 "2001:db8::3/128",
@@ -263,10 +273,14 @@ def nb_api():
         ),
         (
             "http://localhost:8000/api/plugins/lists/ip-addresses?family=4",
+            ["192.0.2.1/32", "192.0.2.2/31", "192.0.2.4/32"],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/ip-addresses?family=4&summarize=false",
             ["192.0.2.1/32", "192.0.2.2/32", "192.0.2.3/32", "192.0.2.4/32"],
         ),
         (
-            "http://localhost:8000/api/plugins/lists/ip-addresses?family=4&as_cidr=false",
+            "http://localhost:8000/api/plugins/lists/ip-addresses?family=4&as_cidr=false&summarize=false",
             ["192.0.2.1", "192.0.2.2", "192.0.2.3", "192.0.2.4"],
         ),
         #
@@ -274,6 +288,10 @@ def nb_api():
         #
         (
             "http://localhost:8000/api/plugins/lists/prefixes",
+            ["192.0.2.0/24", "2001:db8:2::/64", "2001:db8:3::/127"],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/prefixes?summarize=false",
             ["192.0.2.0/24", "192.0.2.32/27", "2001:db8:2::/64", "2001:db8:3::/127"],
         ),
         (
@@ -282,20 +300,21 @@ def nb_api():
         ),
         (
             "http://localhost:8000/api/plugins/lists/prefixes?mask_length6=64",
-            ["192.0.2.0/24", "192.0.2.32/27", "2001:db8:2::/64"],
+            ["192.0.2.0/24", "2001:db8:2::/64"],
         ),
         (
             "http://localhost:8000/api/plugins/lists/prefixes?mask_length6__gte=70",
-            ["192.0.2.0/24", "192.0.2.32/27", "2001:db8:3::/127"],
+            ["192.0.2.0/24", "2001:db8:3::/127"],
         ),
         (
             "http://localhost:8000/api/plugins/lists/prefixes?mask_length6__lte=126",
-            ["192.0.2.0/24", "192.0.2.32/27", "2001:db8:2::/64"],
+            ["192.0.2.0/24", "2001:db8:2::/64"],
         ),
         (
             "http://localhost:8000/api/plugins/lists/prefixes?mask_length4__lte=26",
             ["192.0.2.0/24", "2001:db8:2::/64", "2001:db8:3::/127"],
         ),
+        # Summarization shoiuld happen after filtering
         (
             "http://localhost:8000/api/plugins/lists/prefixes?mask_length4__gte=26",
             ["192.0.2.32/27", "2001:db8:2::/64", "2001:db8:3::/127"],
@@ -311,15 +330,15 @@ def nb_api():
         # Services
         #
         (
-            "http://localhost:8000/api/plugins/lists/services?as_cidr=false",
+            "http://localhost:8000/api/plugins/lists/services?as_cidr=false&summarize=false",
             ["192.0.2.2", "2001:db8::1", "192.0.2.3", "2001:db8::3"],
         ),
         (
-            "http://localhost:8000/api/plugins/lists/services?as_cidr=false&primary_ips=false",
+            "http://localhost:8000/api/plugins/lists/services?as_cidr=false&summarize=false&primary_ips=false",
             ["192.0.2.2", "2001:db8::1"],
         ),
         (
-            "http://localhost:8000/api/plugins/lists/services?as_cidr=false&primary_ips=false&family=4",
+            "http://localhost:8000/api/plugins/lists/services?as_cidr=false&summarize=false&primary_ips=false&family=4",
             ["192.0.2.2"],
         ),
         (
@@ -331,23 +350,23 @@ def nb_api():
         # Devices
         #
         (
-            "http://localhost:8000/api/plugins/lists/devices?as_cidr=false",
+            "http://localhost:8000/api/plugins/lists/devices?as_cidr=false&summarize=false",
             ["192.0.2.1", "2001:db8::1"],
         ),
         ("http://localhost:8000/api/plugins/lists/devices?family=4", ["192.0.2.1/32"]),
         (
-            "http://localhost:8000/api/plugins/lists/devices?family=6&as_cidr=false",
+            "http://localhost:8000/api/plugins/lists/devices?family=6&as_cidr=false&summarize=false",
             ["2001:db8::1"],
         ),
         #
         # Virtual Machines
         #
         (
-            "http://localhost:8000/api/plugins/lists/virtual-machines?as_cidr=false",
+            "http://localhost:8000/api/plugins/lists/virtual-machines?as_cidr=false&summarize=false",
             ["192.0.2.3", "2001:db8::3"],
         ),
         (
-            "http://localhost:8000/api/plugins/lists/virtual-machines?family=4&as_cidr=false",
+            "http://localhost:8000/api/plugins/lists/virtual-machines?family=4&as_cidr=false&summarize=false",
             ["192.0.2.3"],
         ),
         (
@@ -362,7 +381,7 @@ def nb_api():
             ["192.0.2.1/32", "2001:db8::1/128", "192.0.2.3/32", "2001:db8::3/128"],
         ),
         (
-            "http://localhost:8000/api/plugins/lists/devices-vms?as_cidr=false",
+            "http://localhost:8000/api/plugins/lists/devices-vms?as_cidr=false&summarize=false",
             ["192.0.2.1", "2001:db8::1", "192.0.2.3", "2001:db8::3"],
         ),
         (
@@ -482,6 +501,10 @@ def nb_api():
         ),
         (
             "http://localhost:8000/api/plugins/lists/tags/test-tag?services",
+            ["192.0.2.2/31", "2001:db8::1/128", "2001:db8::3/128"],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/tags/test-tag?services&summarize=false",
             ["192.0.2.2/32", "2001:db8::1/128", "192.0.2.3/32", "2001:db8::3/128"],
         ),
         (
@@ -494,6 +517,10 @@ def nb_api():
         ),
         (
             "http://localhost:8000/api/plugins/lists/tags/test-tag?services&family=4",
+            ["192.0.2.2/31"],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/tags/test-tag?services&family=4&summarize=false",
             ["192.0.2.2/32", "192.0.2.3/32"],
         ),
         (
@@ -502,6 +529,15 @@ def nb_api():
         ),
         (
             "http://localhost:8000/api/plugins/lists/tags/test-tag?ips&aggregates&prefixes",
+            [
+                "192.0.2.2/32",
+                "172.16.0.0/12",
+                "192.0.2.32/27",
+                "2001:db8::/32",
+            ],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/tags/test-tag?ips&aggregates&prefixes&summarize=false",
             [
                 "192.0.2.2/32",
                 "2001:db8::1/128",
@@ -525,6 +561,22 @@ def nb_api():
             "http://localhost:8000/api/plugins/lists/tags/test-tag?all",
             [
                 # devices
+                "192.0.2.2/31",
+                # ips - all device 2 IPs
+                # aggregates
+                "172.16.0.0/12",
+                "2001:db8::/32",
+                # ?prefixes
+                "192.0.2.32/27",
+                # ?vms
+                "192.0.2.4/32",
+                # ?services - duplicate IPs so it shouldn't be included.
+            ],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/tags/test-tag?all&summarize=false",
+            [
+                # devices
                 "192.0.2.2/32",
                 "2001:db8::1/128",  # Test Device 2 IPs
                 # ips - all device 2 IPs
@@ -543,6 +595,21 @@ def nb_api():
         ),
         (
             "http://localhost:8000/api/plugins/lists/tags/test-tag?all_primary",
+            [
+                # ?devices - None. Device 2 doesn't have any primary IPs set and device 1 has a different tag.
+                # ?ips
+                "192.0.2.2/31",
+                # ?aggregates
+                "172.16.0.0/12",
+                "2001:db8::/32",
+                # ?prefixes
+                "192.0.2.32/27",
+                # ?vms
+                # ?services - duplicate so it shouldn't be included.
+            ],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/tags/test-tag?all_primary&summarize=false",
             [
                 # ?devices - None. Device 2 doesn't have any primary IPs set and device 1 has a different tag.
                 # ?ips
@@ -573,17 +640,20 @@ def test_lists(nb_api, nb_requests: requests.Session, url: str, expected: List[s
 
 def test_lists_txt(nb_api, nb_requests: requests.Session):
     with_header = nb_requests.get(
-        "http://localhost:8000/api/plugins/lists/ip-addresses",
+        "http://localhost:8000/api/plugins/lists/ip-addresses?summarize=false",
         headers={"Accept": "text/plain"},
     )
     with_format = nb_requests.get(
-        "http://localhost:8000/api/plugins/lists/ip-addresses?format=text",
+        "http://localhost:8000/api/plugins/lists/ip-addresses?format=text&summarize=false",
         headers={"Accept": "*/*"},
     )
     ip_only = nb_requests.get(
-        "http://localhost:8000/api/plugins/lists/ip-addresses?format=text&as_cidr=false",
+        "http://localhost:8000/api/plugins/lists/ip-addresses?format=text&as_cidr=false&summarize=false",
         headers={"Accept": "*/*"},
     )
+    for txt_req in (with_header, with_format, ip_only):
+        assert txt_req.headers["Content-Type"].startswith("text/plain")
+
     assert sorted(with_header.text.splitlines()) == sorted(
         with_format.text.splitlines()
     )

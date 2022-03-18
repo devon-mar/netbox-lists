@@ -6,6 +6,7 @@ authors = ["Devon Mar <devonm@mdmm.ca>"]
 
 [tool.poetry.dependencies]
 python = "^3.6.2"
+netaddr = "^0.8.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
@@ -18,3 +19,7 @@ black = "^22.1.0"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+force_alphabetical_sort_within_sections = true

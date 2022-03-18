@@ -1,30 +1,44 @@
-from typing import Any, List, Union
+import itertools
+from typing import Any, Iterable, List, Union
 
 from django.conf import settings
 from django.db.models import Q
 from django.db.models.query import QuerySet
-from netaddr import IPNetwork
+from netaddr import IPNetwork, cidr_merge
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from .constants import AS_CIDR_PARAM_NAME, FAMILY_PARAM_NAME
+from .constants import AS_CIDR_PARAM_NAME, FAMILY_PARAM_NAME, SUMMARIZE_PARAM_NAME
 
 
-def make_response(ips: List[str]) -> Response:
-    return Response(list(set(ips)))
-
-
-def format_ipn(ipn: IPNetwork, as_cidr: bool) -> str:
-    if as_cidr:
-        return str(ipn.ip) + "/32" if ipn.version == 4 else str(ipn.ip) + "/128"
+def make_ip_list_response(
+    networks: Iterable[IPNetwork],
+    summarize: bool,
+    use_net_ip: bool = False,
+) -> Response:
+    ret: Iterable[str]
+    if summarize is True:
+        if use_net_ip is True:
+            ret = (str(i) for i in cidr_merge([network.ip for network in networks]))
+        else:
+            ret = (str(i) for i in cidr_merge([str(i) for i in networks]))
+    elif use_net_ip is True:
+        ret = set(str(i.ip) for i in networks)
     else:
-        return str(ipn.ip)
+        ret = set(str(i) for i in networks)
+
+    return Response(ret)
+
+
+def set_prefixlen_max(ipn: IPNetwork) -> IPNetwork:
+    ipn.prefixlen = 32 if ipn.version == 4 else 128
+    return ipn
 
 
 def device_vm_primary_list(
-    qs: QuerySet[Any], family: Union[int, None], cidr: bool = False
-) -> List[str]:
+    qs: QuerySet[Any], family: Union[int, None]
+) -> Iterable[IPNetwork]:
     if family is None:
         queryset = qs.filter(
             Q(primary_ip4__isnull=False) | Q(primary_ip6__isnull=False)
@@ -40,56 +54,46 @@ def device_vm_primary_list(
     queryset = queryset.values_list("primary_ip4__address", "primary_ip6__address")
 
     if retindex >= 0:
-        return list(set([format_ipn(tpl[retindex], cidr) for tpl in queryset]))
+        return (set_prefixlen_max(i[retindex]) for i in queryset)
     else:
-        return list(
-            set([format_ipn(adr, cidr) for tupl in queryset for adr in tupl if adr])
+        return (
+            set_prefixlen_max(i) for i in itertools.chain.from_iterable(queryset) if i
         )
 
 
 def services_primary_ips(
-    qs: QuerySet[Any], as_cidr: bool, family: Union[int, None]
-) -> List[str]:
-    values = []
-    if family is None:
-        family_filter = Q(
-            Q(device__primary_ip4__isnull=False)
-            | Q(device__primary_ip6__isnull=False)
-            | Q(virtual_machine__primary_ip4__isnull=False)
-            | Q(virtual_machine__primary_ip6__isnull=False)
+    qs: QuerySet[Any], family: Union[int, None]
+) -> Iterable[IPNetwork]:
+    family_filter = Q()
+    values: List[str] = []
+    if family == 4 or family is None:
+        family_filter |= Q(device__primary_ip4__isnull=False) | Q(
+            virtual_machine__primary_ip4__isnull=False
         )
-        values = [
-            "device__primary_ip4__address",
-            "device__primary_ip6__address",
-            "virtual_machine__primary_ip4__address",
-            "virtual_machine__primary_ip6__address",
-        ]
-    elif family == 4:
-        family_filter = Q(
-            Q(device__primary_ip4__isnull=False)
-            | Q(virtual_machine__primary_ip4__isnull=False)
+        values.extend(
+            [
+                "device__primary_ip4__address",
+                "virtual_machine__primary_ip4__address",
+            ]
         )
-        values = [
-            "device__primary_ip4__address",
-            "virtual_machine__primary_ip4__address",
-        ]
-    else:
-        family_filter = Q(
-            Q(device__primary_ip6__isnull=False)
-            | Q(virtual_machine__primary_ip6__isnull=False)
+    if family == 6 or family is None:
+        family_filter |= Q(device__primary_ip6__isnull=False) | Q(
+            virtual_machine__primary_ip6__isnull=False
         )
-        values = [
-            "device__primary_ip6__address",
-            "virtual_machine__primary_ip6__address",
-        ]
+        values.extend(
+            [
+                "device__primary_ip6__address",
+                "virtual_machine__primary_ip6__address",
+            ]
+        )
 
     qs = qs.filter(Q(ipaddresses__isnull=True), family_filter).values_list(*values)
-    return list(set([format_ipn(adr, as_cidr) for tupl in qs for adr in tupl if adr]))
+    return (set_prefixlen_max(i) for i in itertools.chain.from_iterable(qs) if i)
 
 
 def services_assigned_ips(
-    qs: QuerySet[Any], as_cidr: bool, family: Union[int, None]
-) -> List[str]:
+    qs: QuerySet[Any], family: Union[int, None]
+) -> Iterable[IPNetwork]:
     if family is None:
         family_filter = Q()
     elif family == 4:
@@ -97,27 +101,22 @@ def services_assigned_ips(
     else:
         family_filter = Q(ipaddresses__address__family=6)
 
-    qs = (
+    return (
         qs.filter(Q(ipaddresses__isnull=False), family_filter)
         .values_list("ipaddresses__address", flat=True)
         .distinct()
     )
 
-    return [format_ipn(i, as_cidr) for i in qs]
-
 
 def get_service_ips(
-    qs: QuerySet[Any], as_cidr: bool, family: Union[int, None], include_primaries: bool
-) -> List[str]:
-    if include_primaries:
-        return list(
-            set(
-                services_assigned_ips(qs, as_cidr, family)
-                + services_primary_ips(qs, as_cidr, family)
-            )
-        )
+    qs: QuerySet[Any], family: Union[int, None], include_primaries: bool
+) -> Iterable[IPNetwork]:
+    iterables: List[Iterable[IPNetwork]] = [services_assigned_ips(qs, family)]
 
-    return services_assigned_ips(qs, as_cidr, family)
+    if include_primaries is True:
+        iterables.append(services_primary_ips(qs, family))
+
+    return (set_prefixlen_max(i) for i in itertools.chain.from_iterable(iterables))
 
 
 def get_svc_primary_ips_param(param: str, req: Request) -> bool:
@@ -146,7 +145,7 @@ def get_family_param(req: Request) -> Union[int, None]:
         return int(val)
 
 
-def get_as_cidr(req: Request) -> bool:
+def get_as_cidr_param(req: Request) -> bool:
     val = req.query_params.get(AS_CIDR_PARAM_NAME, None)
     if val is None:
         return settings.PLUGINS_CONFIG["netbox_lists"].get("as_cidr", True)
@@ -156,3 +155,15 @@ def get_as_cidr(req: Request) -> bool:
         return False
     else:
         raise ValidationError("as_cidr must be true or false.")
+
+
+def get_summarize_param(req: Request) -> bool:
+    val = req.query_params.get(SUMMARIZE_PARAM_NAME, None)
+    if val is None:
+        return settings.PLUGINS_CONFIG["netbox_lists"].get("summarize", True)
+    elif val.lower() == "true":
+        return True
+    elif val.lower() == "false":
+        return False
+    else:
+        raise ValidationError("summarize must be true or false.")

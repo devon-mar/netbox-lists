@@ -10,7 +10,7 @@ class ListsPluginConfig(PluginConfig):
     author = "Devon Mar"
     base_url = "lists"
     required_settings = []
-    default_settings = {"as_cidr": True, "service_primary_ips": True}
+    default_settings = {"as_cidr": True, "service_primary_ips": True, "summarize": True}
 
 
 config = ListsPluginConfig
