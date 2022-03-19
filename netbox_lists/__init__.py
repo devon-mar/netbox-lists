@@ -10,7 +10,19 @@ class ListsPluginConfig(PluginConfig):
     author = "Devon Mar"
     base_url = "lists"
     required_settings = []
-    default_settings = {"as_cidr": True, "service_primary_ips": True, "summarize": True}
+    default_settings = {
+        "as_cidr": True,
+        "service_primary_ips": True,
+        "summarize": True,
+        "oxidized_attrs": [
+            "id",
+            "name",
+            "role__slug",
+            "platform__slug",
+            "primary_ip__address",
+            "tags"
+        ],
+    }
 
 
 config = ListsPluginConfig

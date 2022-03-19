@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, Dict, List
 
 import pynetbox
 import pytest
@@ -165,6 +165,7 @@ def nb_api():
         api.virtualization.virtual_machines,
         name="VM1",
         cluster=test_cluster.id,
+        role=test_device_role.id,
         tags=[test_tag.id],
     )
     test_vm_1_intf_1 = nb_create(
@@ -504,6 +505,17 @@ def nb_api():
         (
             "http://localhost:8000/api/plugins/lists/devices-vms?as_cidr=true&name=Test Device 1&family=4",
             ["192.0.2.1/32"],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/devices-vms?role=test-role",
+            [
+                # Test Device 1
+                "2001:db8::1/128",
+                "192.0.2.1/32",
+                # VM1
+                "2001:db8::3/128",
+                "192.0.2.3/32",
+            ],
         ),
         #
         # Tags
@@ -913,6 +925,111 @@ def test_prom_sd(nb_api, nb_requests: requests.Session, url: str, expected: List
                 pytest.fail(f"Label {k} is missing for {want['targets']}")
             assert have["labels"][k] == v, f"Target {want['targets']}"
             assert isinstance(have["labels"][k], str)
+
+
+@pytest.mark.parametrize(
+    "url,expected",
+    [
+        (
+            "http://localhost:8000/api/plugins/lists/devices-vms-attrs/?tag=test-device-tag",
+            [
+                {
+                    "name": "Test Device 1",
+                    "role__slug": "test-role",
+                    "platform__slug": None,
+                    "primary_ip__address": "2001:db8::1/128",
+                    "tags": ["test-device-tag"],
+                },
+            ],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/devices-vms-attrs/?role=test-role",
+            [
+                {
+                    "name": "VM1",
+                    "role__slug": "test-role",
+                    "platform__slug": None,
+                    "primary_ip__address": "2001:db8::3/128",
+                    "tags": ["test-tag"],
+                },
+                {
+                    "name": "Test Device 1",
+                    "role__slug": "test-role",
+                    "platform__slug": None,
+                    "primary_ip__address": "2001:db8::1/128",
+                    "tags": ["test-device-tag"],
+                },
+                {
+                    "name": "Test-Device-2",
+                    "role__slug": "test-role",
+                    "platform__slug": None,
+                    "primary_ip__address": None,
+                    "tags": ["test-tag"],
+                },
+            ],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/devices-vms-attrs/",
+            [
+                {
+                    "name": "VM1",
+                    "role__slug": "test-role",
+                    "platform__slug": None,
+                    "primary_ip__address": "2001:db8::3/128",
+                    "tags": ["test-tag"],
+                },
+                {
+                    "name": "VM2",
+                    "role__slug": None,
+                    "platform__slug": None,
+                    "primary_ip__address": None,
+                    "tags": [],
+                },
+                {
+                    "name": "Test Device 1",
+                    "role__slug": "test-role",
+                    "platform__slug": None,
+                    "primary_ip__address": "2001:db8::1/128",
+                    "tags": ["test-device-tag"],
+                },
+                {
+                    "name": "Test-Device-2",
+                    "role__slug": "test-role",
+                    "platform__slug": None,
+                    "primary_ip__address": None,
+                    "tags": ["test-tag"],
+                },
+            ],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/devices-vms-attrs/?name=VM2",
+            [
+                {
+                    "name": "VM2",
+                    "role__slug": None,
+                    "platform__slug": None,
+                    "primary_ip__address": None,
+                    "tags": [],
+                }
+            ],
+        ),
+    ],
+)
+def test_devices_vms_attrs(
+    nb_api, nb_requests: requests.Session, url: str, expected: List[Dict[str, Any]]
+) -> None:
+    resp = nb_requests.get(url)
+    assert resp.status_code == 200
+    assert resp.headers["Content-Type"] == "application/json"
+
+    resp_json = resp.json()
+    assert isinstance(resp_json, list)
+    assert len(resp_json) == len(expected)
+
+    for device in resp_json:
+        device.pop("id", None)
+
+    assert resp_json == expected
 
 
 def test_tags_404(nb_api, nb_requests: requests.Session):

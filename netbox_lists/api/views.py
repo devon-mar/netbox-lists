@@ -1,11 +1,12 @@
 import itertools
 import operator
 from functools import reduce
-from typing import Iterable, Union
+from typing import Any, Dict, Iterable, List, Union
 
 import netaddr
 from dcim.filtersets import DeviceFilterSet
 from dcim.models import Device
+from django.conf import settings
 from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -36,6 +37,8 @@ from .renderers import PlainTextRenderer
 from .utils import (
     device_vm_primary_list,
     get_as_cidr_param,
+    get_attr_r,
+    get_device_params,
     get_family_param,
     get_service_ips,
     get_summarize_param,
@@ -206,9 +209,17 @@ class DevicesVMsListView(APIView):
     # Therefore, we use Device as the model.
     queryset = Device.objects.all()
 
+    @staticmethod
+    def _get_device_params(params: Dict[str, Any]) -> Dict[str, Any]:
+        new = params.copy()
+        role = new.pop("role", None)
+        if role is not None:
+            new["device_role"] = role
+        return new
+
     @swagger_auto_schema(
         operation_description="Combined devices and virtual machines primary IPs list. "
-        "Use only parameters common to both devices and VMs.",
+        "Use only parameters common to both devices and VMs ('role' can be used for both devices and VMs).",
         manual_parameters=[SUMMARIZE_PARAM],
     )
     def get(self, request: Request) -> Response:
@@ -217,7 +228,7 @@ class DevicesVMsListView(APIView):
         summarize = get_summarize_param(request)
 
         devices_fs = DeviceFilterSet(
-            request.query_params,
+            self._get_device_params(request.query_params),
             queryset=Device.objects.restrict(request.user, "view").all(),
         )
         vms_fs = VirtualMachineFilterSet(
@@ -466,7 +477,7 @@ class PrometheusDeviceSD(GenericViewSet):
     queryset = Device.objects.all()
     filterset_class = DeviceFilterSet
 
-    def _sd_device(self, d: Device) -> dict:
+    def _sd_device(self, d: Device) -> Dict[str, Any]:
         labels = {
             "__meta_netbox_id": d.id,
             "__meta_netbox_name": d.name,
@@ -501,7 +512,7 @@ class PrometheusVirtualMachineSD(GenericViewSet):
     queryset = VirtualMachine.objects.filter()
     filterset_class = VirtualMachineFilterSet
 
-    def _sd_vm(self, vm: VirtualMachine) -> dict:
+    def _sd_vm(self, vm: VirtualMachine) -> Dict[str, Any]:
         labels = {
             "__meta_netbox_id": str(vm.id),
             "__meta_netbox_name": vm.name,
@@ -531,3 +542,42 @@ class PrometheusVirtualMachineSD(GenericViewSet):
     def list(self, request: Request) -> Response:
         queryset = self.filter_queryset(self.get_queryset())
         return Response([self._sd_vm(vm) for vm in queryset])
+
+
+class DevicesVMsAttrsListView(APIView):
+    renderer_classes = [JSONRenderer, BrowsableAPIRenderer]
+    queryset = Device.objects.all()
+
+    def _to_dict(
+        self,
+        attrs: List[str],
+        display_attrs: List[str],
+        device: Union[Device, VirtualMachine],
+    ) -> Dict[str, Any]:
+        """Convert a device or VM to a dictionary"""
+        return {d_a: get_attr_r(a, device) for a, d_a in zip(attrs, display_attrs)}
+
+    def get(self, request: Request) -> Response:
+        attrs = settings.PLUGINS_CONFIG["netbox_lists"]["oxidized_attrs"]
+
+        device_attrs = []
+        for a in attrs:
+            if a == "role":
+                device_attrs.append("role")
+            elif a.startswith("role__"):
+                device_attrs.append(a.replace("role__", "device_role__"))
+            else:
+                device_attrs.append(a)
+
+        devices = DeviceFilterSet(
+            get_device_params(request.query_params),
+            queryset=Device.objects.restrict(request.user, "view").all(),
+        ).qs
+        vms = VirtualMachineFilterSet(
+            request.query_params,
+            queryset=VirtualMachine.objects.restrict(request.user, "view").all(),
+        ).qs
+        return Response(
+            [self._to_dict(attrs, attrs, d) for d in vms]
+            + [self._to_dict(device_attrs, attrs, d) for d in devices]
+        )

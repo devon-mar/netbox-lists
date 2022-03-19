@@ -1,5 +1,5 @@
 import itertools
-from typing import Any, Iterable, List, Union
+from typing import Any, Dict, Iterable, List, Union
 
 from django.conf import settings
 from django.db.models import Q
@@ -8,8 +8,14 @@ from netaddr import cidr_merge, IPNetwork, iprange_to_cidrs
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
+from taggit.managers import _TaggableManager
 
-from .constants import AS_CIDR_PARAM_NAME, FAMILY_PARAM_NAME, SUMMARIZE_PARAM_NAME
+from .constants import (
+    AS_CIDR_PARAM_NAME,
+    FAMILY_PARAM_NAME,
+    LOOKUP_SEP,
+    SUMMARIZE_PARAM_NAME,
+)
 
 
 def make_ip_list_response(
@@ -171,3 +177,36 @@ def get_summarize_param(req: Request) -> bool:
 
 def ip_range_prefixes(start: IPNetwork, end: IPNetwork) -> List[IPNetwork]:
     return iprange_to_cidrs(start.ip, end.ip)
+
+
+def get_device_params(params: Dict[str, Any]) -> Dict[str, Any]:
+    new = params.copy()
+    role = new.pop("role", None)
+    if role is not None:
+        new["device_role"] = role
+    return new
+
+
+def _json_rep(obj: Any) -> Union[str, int, bool, list, dict, None]:
+    """Return a JSON serializable representation"""
+    if isinstance(obj, (str, int, bool)) or obj is None:
+        return obj
+    elif isinstance(obj, list):
+        return [_json_rep(o) for o in obj]
+    elif isinstance(obj, dict):
+        return {str(k): _json_rep(v) for k, v in obj.items()}
+    elif isinstance(obj, _TaggableManager):
+        return list(obj.slugs())
+    else:
+        return str(obj)
+
+
+def _get_attr_r(attrs: List[str], obj: Any) -> Any:
+    if len(attrs) == 0 or obj is None:
+        return _json_rep(obj)
+
+    return _get_attr_r(attrs[1:], getattr(obj, attrs[0]))
+
+
+def get_attr_r(attr: str, obj: Any) -> Any:
+    return _get_attr_r(attr.split(LOOKUP_SEP), obj)

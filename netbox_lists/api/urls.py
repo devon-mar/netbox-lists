@@ -8,6 +8,7 @@ from .views import (
     IPAddressListViewSet,
     IPRangeListViewSet,
     ListsRootView,
+    DevicesVMsAttrsListView,
     PrefixListViewSet,
     PrometheusDeviceSD,
     PrometheusVirtualMachineSD,
@@ -32,5 +33,8 @@ router.register(
 router.register("prometheus-devices", PrometheusDeviceSD)
 router.register("prometheus-vms", PrometheusVirtualMachineSD)
 
-urlpatterns = [path("devices-vms/", DevicesVMsListView.as_view())]
+urlpatterns = [
+    path("devices-vms/", DevicesVMsListView.as_view()),
+    path("devices-vms-attrs/", DevicesVMsAttrsListView.as_view()),
+]
 urlpatterns += router.urls
