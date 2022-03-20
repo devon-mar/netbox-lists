@@ -30,8 +30,7 @@ from rest_framework.viewsets import GenericViewSet
 from virtualization.filtersets import VirtualMachineFilterSet
 from virtualization.models import VirtualMachine
 
-from netbox_lists.api.filtersets import CustomPrefixFilterSet
-
+from .filtersets import CustomPrefixFilterSet
 from .constants import AS_CIDR_PARAM_NAME, FAMILY_PARAM_NAME, SUMMARIZE_PARAM_NAME
 from .renderers import PlainTextRenderer
 from .utils import (
