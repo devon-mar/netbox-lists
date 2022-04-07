@@ -788,13 +788,7 @@ def nb_api():
     ],
 )
 def test_lists(nb_api, nb_requests: requests.Session, url: str, expected: List[str]):
-    req = requests.get(
-        url,
-        headers={
-            "Authorization": "Token 0123456789abcdef0123456789abcdef01234567",
-            "Accept": "application/json",
-        },
-    )
+    req = nb_requests.get(url)
     assert req.status_code == 200
     resp = req.json()
 
