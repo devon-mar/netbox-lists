@@ -7,6 +7,11 @@ from pynetbox.core import endpoint, response
 
 nb_objects: List[response.Record] = []
 
+API_TOKENS: Dict[str, str] = {
+    "no_permissions": "to be set",
+    "constraint": "to be set",
+}
+
 
 def nb_cleanup():
     nb_objects.reverse()
@@ -253,6 +258,42 @@ def nb_api():
         end_address="2001:db8:f00d::23f/64",
     )
 
+    no_perm_user = nb_create(
+        api.users.users, username="no_permissions", password="passw0rd"
+    )
+    no_perm = nb_create(
+        api.users.permissions,
+        name="no_permissions",
+        object_types=[],
+        actions=["view"],
+        users=[no_perm_user.id],
+    )
+    no_perm_token = nb_create(api.users.tokens, user=no_perm_user.id)
+    API_TOKENS["no_permissions"] = no_perm_token.key
+
+    constraint_user = nb_create(
+        api.users.users, username="constraint_user", password="passw0rd"
+    )
+    constraint_permissions = nb_create(
+        api.users.permissions,
+        name="constraint_permissions",
+        object_types=[
+            "dcim.device",
+            "ipam.aggregate",
+            "ipam.ipaddress",
+            "ipam.prefix",
+            "ipam.service",
+            "ipam.iprange",
+            "extras.tag",
+            "virtualization.virtualmachine",
+            "virtualization.vminterface",
+        ],
+        actions=["view"],
+        users=[constraint_user.id],
+        constraints={"id__lt": 0},
+    )
+    constraint_token = nb_create(api.users.tokens, user=constraint_user.id)
+    API_TOKENS["constraint"] = constraint_token.key
     yield api
     nb_cleanup()
 
@@ -747,12 +788,38 @@ def nb_api():
     ],
 )
 def test_lists(nb_api, nb_requests: requests.Session, url: str, expected: List[str]):
-    req = nb_requests.get(url)
+    req = requests.get(
+        url,
+        headers={
+            "Authorization": "Token 0123456789abcdef0123456789abcdef01234567",
+            "Accept": "application/json",
+        },
+    )
     assert req.status_code == 200
     resp = req.json()
 
     assert isinstance(resp, list)
     assert sorted(resp) == sorted(expected)
+
+    # User with no permissions test
+    req = requests.get(
+        url,
+        headers={
+            "Authorization": f"Token {API_TOKENS['no_permissions']}",
+            "Accept": "application/json",
+        },
+    )
+    assert req.status_code == 403
+
+    req = requests.get(
+        url,
+        headers={
+            "Authorization": f"Token {API_TOKENS['constraint']}",
+            "Accept": "application/json",
+        },
+    )
+    assert req.status_code == 200
+    assert req.json() == []
 
 
 def test_lists_txt(nb_api, nb_requests: requests.Session):
