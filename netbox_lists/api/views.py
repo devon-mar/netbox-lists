@@ -79,7 +79,7 @@ class ListsBaseViewSet(GenericViewSet):
     # Adapted from
     # https://github.com/netbox-community/netbox/blob/a33e47780b42f49f4ea536bace1617fa7dda31ab/
     # netbox/netbox/api/views.py#L179
-    def initial(self, request, *args, **kwargs):
+    def initial(self, request: Request, *args, **kwargs):
         super().initial(request, *args, **kwargs)
 
         if not request.user.is_authenticated:
@@ -557,7 +557,7 @@ class DevicesVMsAttrsListView(APIView):
         return {d_a: get_attr_r(a, device) for a, d_a in zip(attrs, display_attrs)}
 
     def get(self, request: Request) -> Response:
-        attrs = settings.PLUGINS_CONFIG["netbox_lists"]["oxidized_attrs"]
+        attrs = settings.PLUGINS_CONFIG["netbox_lists"]["devices_vms_attrs"]
 
         device_attrs = []
         for a in attrs:

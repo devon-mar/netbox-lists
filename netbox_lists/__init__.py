@@ -16,7 +16,7 @@ class ListsPluginConfig(PluginConfig):
         "as_cidr": True,
         "service_primary_ips": True,
         "summarize": True,
-        "oxidized_attrs": [
+        "devices_vms_attrs": [
             "id",
             "name",
             "role__slug",
