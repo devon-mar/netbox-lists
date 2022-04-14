@@ -1,14 +1,14 @@
 from django.urls import path
-from netbox.api.routers import NetBoxRouter
+from rest_framework.routers import DefaultRouter
 
 from .views import (
     AggregateListViewSet,
     DevicesListViewSet,
+    DevicesVMsAttrsListView,
     DevicesVMsListView,
     IPAddressListViewSet,
     IPRangeListViewSet,
     ListsRootView,
-    DevicesVMsAttrsListView,
     PrefixListViewSet,
     PrometheusDeviceSD,
     PrometheusVirtualMachineSD,
@@ -19,7 +19,7 @@ from .views import (
 
 app_name = "lists"
 
-router = NetBoxRouter()
+router = DefaultRouter()
 router.APIRootView = ListsRootView
 
 router.register("prefixes", PrefixListViewSet)
