@@ -40,6 +40,7 @@ set -e
 
 if [ "$CURL_RET" -ne 0 ]; then
     echo "::error NetBox failed to start."
+    docker-compose logs
     exit $CURL_RET
 fi
 
