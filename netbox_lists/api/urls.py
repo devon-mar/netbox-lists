@@ -1,5 +1,5 @@
 from django.urls import path
-from rest_framework import routers
+from netbox.api.routers import NetBoxRouter
 
 from .views import (
     AggregateListViewSet,
@@ -17,7 +17,9 @@ from .views import (
     VirtualMachinesListViewSet,
 )
 
-router = routers.DefaultRouter()
+app_name = "lists"
+
+router = NetBoxRouter()
 router.APIRootView = ListsRootView
 
 router.register("prefixes", PrefixListViewSet)
