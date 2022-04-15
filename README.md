@@ -23,7 +23,7 @@ This plugin supports NetBox v2.11, v3.0, and v3.1.
 
 * Address family specific prefix length filters.
 
-* JSON and text output formats.
+* JSON and plain text output formats.
 
 ## Documentation
 * API documentation can be found in NetBox's builtin API docs (`/api/docs/`).
@@ -32,6 +32,10 @@ This plugin supports NetBox v2.11, v3.0, and v3.1.
   or by the appending `format=(text|json)` to the URL.
 
 * This plugin uses NetBox's object permissions. Make sure users have the appropriate permissions.
+
+* Summarization is enabled by default.
+
+* When summarization is enabled, all IP addresses will be returned in CIDR format regardless of the `as_cidr` setting.
 
 ## Installation
 1. Add `netbox-lists` to `local_requirements.txt`.
@@ -52,6 +56,18 @@ PLUGINS_CONFIG = {
         # use the primary IPs of the associated device/vm.
         # Default: True
         "service_primary_ips": True
+        # Summarize responses
+        "summarize": True,
+        # A list of attributes for the devices-vms-attrs endpoint
+        # `role` will automatically be converted to `device_role` for devices.
+        "devices_vms_attrs": [
+            "id",
+            "name",
+            "role__slug",
+            "platform__slug",
+            "primary_ip__address",
+            "tags",
+        ]
     }
 }
 ```
@@ -86,4 +102,38 @@ https://netbox.example.com/api/plugins/lists/devices/?tag=test&family=6
 6. Get all prefixes and IPs with the tag `internal`
 ```
 https://netbox.example.com/api/plugins/lists/tags/internal/?ips&prefixes
+```
+
+7. Get all prefixes and IPs with the tag `internal` without summarization
+```
+https://netbox.example.com/api/plugins/lists/tags/internal/?ips&prefixes&summarize=false
+```
+
+### Oxidized usage
+
+```yaml
+source:
+  default: http
+  http:
+    # Devices/VMs with the "oxidized" tag
+    url: https://netbox.example.com/api/plugins/lists/devices-vms-attrs/?tag=oxidized
+    scheme: https
+    secure: true
+    map:
+      name: primary_ip__address
+      model: platform__slug
+    headers:
+      Authorization: Token <netbox token>
+```
+
+### Prometheus usage
+
+```yaml
+http_sd_configs:
+    # VMs with the role slug "linux"
+  - url: https://netbox.example.com/api/plugins/lists/prometheus-vms/?role=linux
+    refresh_interval: 60s
+    authorization:
+      type: Token
+      credentials: mynetboxtoken
 ```
