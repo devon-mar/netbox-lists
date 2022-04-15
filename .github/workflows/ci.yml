@@ -23,8 +23,16 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
+      - name: Load cached venv
+        id: cache-poetry-dependencies
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/poetry.lock') }}
+
       - name: Run poetry install
         run: poetry install
+        if: steps.cache-poetry-dependencies.outputs.cache-hit != 'true'
 
       - uses: psf/black@stable
 
@@ -58,9 +66,16 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
+      - name: Load cached venv
+        id: cache-poetry-dependencies
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/poetry.lock') }}
+
       - name: Run poetry install
-        run: |
-          poetry install
+        run: poetry install
+        if: steps.cache-poetry-dependencies.outputs.cache-hit != 'true'
 
       - name: Checkout netbox-community/netbox-docker
         uses: actions/checkout@v2
