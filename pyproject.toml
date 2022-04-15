@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "netbox-lists"
-version = "1.0.0"
+version = "2.0.0"
 description = ""
 authors = ["Devon Mar <devonm@mdmm.ca>"]
 
