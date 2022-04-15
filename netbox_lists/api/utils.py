@@ -179,8 +179,6 @@ def ip_range_prefixes(start: IPNetwork, end: IPNetwork) -> List[IPNetwork]:
     return iprange_to_cidrs(start.ip, end.ip)
 
 
-
-
 def _json_rep(obj: Any) -> Union[str, int, bool, list, dict, None]:
     """Return a JSON serializable representation"""
     if isinstance(obj, (str, int, bool)) or obj is None:
