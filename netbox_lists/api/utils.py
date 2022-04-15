@@ -1,5 +1,5 @@
 import itertools
-from typing import Any, Dict, Iterable, List, Union
+from typing import Any, Iterable, List, Union
 
 from django.conf import settings
 from django.db.models import Q
