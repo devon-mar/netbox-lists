@@ -179,12 +179,6 @@ def ip_range_prefixes(start: IPNetwork, end: IPNetwork) -> List[IPNetwork]:
     return iprange_to_cidrs(start.ip, end.ip)
 
 
-def get_device_params(params: Dict[str, Any]) -> Dict[str, Any]:
-    new = params.copy()
-    role = new.pop("role", None)
-    if role is not None:
-        new["device_role"] = role
-    return new
 
 
 def _json_rep(obj: Any) -> Union[str, int, bool, list, dict, None]:

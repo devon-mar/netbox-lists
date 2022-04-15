@@ -67,6 +67,9 @@ def nb_api():
     test_device_role = nb_create(
         api.dcim.device_roles, name="Test Role", slug="test-role"
     )
+    test_device_role_2 = nb_create(
+        api.dcim.device_roles, name="Test Role2", slug="test-role2"
+    )
     test_manufacturer = nb_create(
         api.dcim.manufacturers, name="Test Manufacturer", slug="test-manufacturer"
     )
@@ -115,7 +118,7 @@ def nb_api():
         api.dcim.devices,
         name="Test-Device-2",
         device_type=test_device_type.id,
-        device_role=test_device_role.id,
+        device_role=test_device_role_2.id,
         site=test_site.id,
         tags=[test_tag.id],
     )
@@ -157,6 +160,40 @@ def nb_api():
         device=test_device_2.id,
         ipaddresses=[test_device_2_intf_1_ip_1.id, test_device_2_intf_1_ip_2.id],
         tags=[test_tag.id],
+    )
+    test_device_3 = nb_create(
+        api.dcim.devices,
+        name="Test-Device-3",
+        device_type=test_device_type.id,
+        device_role=test_device_role_2.id,
+        site=test_site.id,
+        tags=[],
+    )
+    test_device_3_intf_1 = nb_create(
+        api.dcim.interfaces,
+        name="GigabitEthernet1/1",
+        type="1000base-t",
+        device=test_device_3.id,
+    )
+    test_device_3_intf_1_ip_1 = nb_create(
+        api.ipam.ip_addresses,
+        address="192.0.2.5/24",
+        assigned_object_type="dcim.interface",
+        assigned_object_id=test_device_3_intf_1.id,
+    )
+    test_device_3_intf_1_ip_2 = nb_create(
+        api.ipam.ip_addresses,
+        address="2001:db8::dead:beef:1/64",
+        assigned_object_type="dcim.interface",
+        assigned_object_id=test_device_3_intf_1.id,
+    )
+    # Set the primary IP
+    nb_update(
+        test_device_3,
+        {
+            "primary_ip4": test_device_3_intf_1_ip_1.id,
+            "primary_ip6": test_device_3_intf_1_ip_2.id,
+        },
     )
     test_cluster_type = nb_create(
         api.virtualization.cluster_types,
@@ -216,7 +253,10 @@ def nb_api():
     )
 
     test_vm_2 = nb_create(
-        api.virtualization.virtual_machines, name="VM2", cluster=test_cluster.id
+        api.virtualization.virtual_machines,
+        name="VM2",
+        cluster=test_cluster.id,
+        role=test_device_role_2.id,
     )
 
     test_prefix_1 = nb_create(api.ipam.prefixes, prefix="192.0.2.0/24")
@@ -311,8 +351,10 @@ def nb_api():
                 "192.0.2.2",
                 "192.0.2.3",
                 "192.0.2.4",
+                "192.0.2.5",
                 "2001:db8::1",
                 "2001:db8::3",
+                "2001:db8::dead:beef:1",
             ],
         ),
         (
@@ -321,9 +363,10 @@ def nb_api():
             [
                 "192.0.2.1/32",
                 "192.0.2.2/31",
-                "192.0.2.4/32",
+                "192.0.2.4/31",
                 "2001:db8::1/128",
                 "2001:db8::3/128",
+                "2001:db8::dead:beef:1/128",
             ],
         ),
         (
@@ -331,22 +374,29 @@ def nb_api():
             [
                 "192.0.2.1/32",
                 "192.0.2.2/31",
-                "192.0.2.4/32",
+                "192.0.2.4/31",
                 "2001:db8::1/128",
                 "2001:db8::3/128",
+                "2001:db8::dead:beef:1/128",
             ],
         ),
         (
             "http://localhost:8000/api/plugins/lists/ip-addresses?family=4",
-            ["192.0.2.1/32", "192.0.2.2/31", "192.0.2.4/32"],
+            ["192.0.2.1/32", "192.0.2.2/31", "192.0.2.4/31"],
         ),
         (
             "http://localhost:8000/api/plugins/lists/ip-addresses?family=4&summarize=false",
-            ["192.0.2.1/32", "192.0.2.2/32", "192.0.2.3/32", "192.0.2.4/32"],
+            [
+                "192.0.2.1/32",
+                "192.0.2.2/32",
+                "192.0.2.3/32",
+                "192.0.2.4/32",
+                "192.0.2.5/32",
+            ],
         ),
         (
             "http://localhost:8000/api/plugins/lists/ip-addresses?family=4&as_cidr=false&summarize=false",
-            ["192.0.2.1", "192.0.2.2", "192.0.2.3", "192.0.2.4"],
+            ["192.0.2.1", "192.0.2.2", "192.0.2.3", "192.0.2.4", "192.0.2.5"],
         ),
         #
         # IP Ranges
@@ -498,12 +548,15 @@ def nb_api():
         #
         (
             "http://localhost:8000/api/plugins/lists/devices?as_cidr=false&summarize=false",
-            ["192.0.2.1", "2001:db8::1"],
+            ["192.0.2.1", "2001:db8::1", "192.0.2.5", "2001:db8::dead:beef:1"],
         ),
-        ("http://localhost:8000/api/plugins/lists/devices?family=4", ["192.0.2.1/32"]),
+        (
+            "http://localhost:8000/api/plugins/lists/devices?family=4",
+            ["192.0.2.1/32", "192.0.2.5/32"],
+        ),
         (
             "http://localhost:8000/api/plugins/lists/devices?family=6&as_cidr=false&summarize=false",
-            ["2001:db8::1"],
+            ["2001:db8::1", "2001:db8::dead:beef:1"],
         ),
         #
         # Virtual Machines
@@ -525,11 +578,25 @@ def nb_api():
         #
         (
             "http://localhost:8000/api/plugins/lists/devices-vms",
-            ["192.0.2.1/32", "2001:db8::1/128", "192.0.2.3/32", "2001:db8::3/128"],
+            [
+                "192.0.2.1/32",
+                "2001:db8::1/128",
+                "192.0.2.3/32",
+                "2001:db8::3/128",
+                "192.0.2.5/32",
+                "2001:db8::dead:beef:1/128",
+            ],
         ),
         (
             "http://localhost:8000/api/plugins/lists/devices-vms?as_cidr=false&summarize=false",
-            ["192.0.2.1", "2001:db8::1", "192.0.2.3", "2001:db8::3"],
+            [
+                "192.0.2.1",
+                "2001:db8::1",
+                "192.0.2.3",
+                "2001:db8::3",
+                "192.0.2.5",
+                "2001:db8::dead:beef:1",
+            ],
         ),
         (
             "http://localhost:8000/api/plugins/lists/devices-vms?as_cidr=true&name=VM1",
@@ -556,6 +623,14 @@ def nb_api():
                 # VM1
                 "2001:db8::3/128",
                 "192.0.2.3/32",
+            ],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/devices-vms?role=test-role2",
+            [
+                # Test Device 3
+                "2001:db8::dead:beef:1/128",
+                "192.0.2.5/32",
             ],
         ),
         #
@@ -841,16 +916,20 @@ def test_lists_txt(nb_api, nb_requests: requests.Session):
         "192.0.2.2/32",
         "192.0.2.3/32",
         "192.0.2.4/32",
+        "192.0.2.5/32",
         "2001:db8::1/128",
         "2001:db8::3/128",
+        "2001:db8::dead:beef:1/128",
     ]
     assert sorted(ip_only.text.splitlines()) == [
         "192.0.2.1",
         "192.0.2.2",
         "192.0.2.3",
         "192.0.2.4",
+        "192.0.2.5",
         "2001:db8::1",
         "2001:db8::3",
+        "2001:db8::dead:beef:1",
     ]
 
 
@@ -885,6 +964,20 @@ def test_lists_txt(nb_api, nb_requests: requests.Session):
                         "__meta_netbox_primary_ip": "",
                         "__meta_netbox_primary_ip4": "",
                         "__meta_netbox_primary_ip6": "",
+                        "__meta_netbox_serial": "",
+                        "__meta_netbox_site_name": "Test Site",
+                        "__meta_netbox_status": "active",
+                    },
+                },
+                {
+                    # Fallback to the device name if a primary ip isn't set.
+                    "targets": ["2001:db8::dead:beef:1"],
+                    "labels": {
+                        "__meta_netbox_name": "Test-Device-3",
+                        "__meta_netbox_platform_name": "",
+                        "__meta_netbox_primary_ip": "2001:db8::dead:beef:1",
+                        "__meta_netbox_primary_ip4": "192.0.2.5",
+                        "__meta_netbox_primary_ip6": "2001:db8::dead:beef:1",
                         "__meta_netbox_serial": "",
                         "__meta_netbox_site_name": "Test Site",
                         "__meta_netbox_status": "active",
@@ -1020,12 +1113,31 @@ def test_prom_sd(nb_api, nb_requests: requests.Session, url: str, expected: List
                     "primary_ip__address": "2001:db8::1/128",
                     "tags": ["test-device-tag"],
                 },
+            ],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/devices-vms-attrs/?role=test-role2",
+            [
+                {
+                    "name": "VM2",
+                    "role__slug": "test-role2",
+                    "platform__slug": None,
+                    "primary_ip__address": None,
+                    "tags": [],
+                },
                 {
                     "name": "Test-Device-2",
-                    "role__slug": "test-role",
+                    "role__slug": "test-role2",
                     "platform__slug": None,
                     "primary_ip__address": None,
                     "tags": ["test-tag"],
+                },
+                {
+                    "name": "Test-Device-3",
+                    "role__slug": "test-role2",
+                    "platform__slug": None,
+                    "primary_ip__address": "2001:db8::dead:beef:1/64",
+                    "tags": [],
                 },
             ],
         ),
@@ -1041,7 +1153,7 @@ def test_prom_sd(nb_api, nb_requests: requests.Session, url: str, expected: List
                 },
                 {
                     "name": "VM2",
-                    "role__slug": None,
+                    "role__slug": "test-role2",
                     "platform__slug": None,
                     "primary_ip__address": None,
                     "tags": [],
@@ -1055,10 +1167,17 @@ def test_prom_sd(nb_api, nb_requests: requests.Session, url: str, expected: List
                 },
                 {
                     "name": "Test-Device-2",
-                    "role__slug": "test-role",
+                    "role__slug": "test-role2",
                     "platform__slug": None,
                     "primary_ip__address": None,
                     "tags": ["test-tag"],
+                },
+                {
+                    "name": "Test-Device-3",
+                    "role__slug": "test-role2",
+                    "platform__slug": None,
+                    "primary_ip__address": "2001:db8::dead:beef:1/64",
+                    "tags": [],
                 },
             ],
         ),
@@ -1067,7 +1186,7 @@ def test_prom_sd(nb_api, nb_requests: requests.Session, url: str, expected: List
             [
                 {
                     "name": "VM2",
-                    "role__slug": None,
+                    "role__slug": "test-role2",
                     "platform__slug": None,
                     "primary_ip__address": None,
                     "tags": [],
