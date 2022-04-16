@@ -862,7 +862,9 @@ def nb_api():
         ),
     ],
 )
-def test_lists(nb_api, nb_requests: requests.Session, url: str, expected: List[str]):
+def test_lists(
+    nb_api: pynetbox.api, nb_requests: requests.Session, url: str, expected: List[str]
+):
     req = nb_requests.get(url)
     assert req.status_code == 200
     resp = req.json()
@@ -891,7 +893,7 @@ def test_lists(nb_api, nb_requests: requests.Session, url: str, expected: List[s
     assert req.json() == []
 
 
-def test_lists_txt(nb_api, nb_requests: requests.Session):
+def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
     with_header = nb_requests.get(
         "http://localhost:8000/api/plugins/lists/ip-addresses?summarize=false",
         headers={"Accept": "text/plain"},
@@ -1061,7 +1063,9 @@ def test_lists_txt(nb_api, nb_requests: requests.Session):
         ),
     ],
 )
-def test_prom_sd(nb_api, nb_requests: requests.Session, url: str, expected: List[dict]):
+def test_prom_sd(
+    nb_api: pynetbox.api, nb_requests: requests.Session, url: str, expected: List[dict]
+):
     resp = nb_requests.get(url).json()
 
     assert isinstance(resp, list)
@@ -1196,7 +1200,10 @@ def test_prom_sd(nb_api, nb_requests: requests.Session, url: str, expected: List
     ],
 )
 def test_devices_vms_attrs(
-    nb_api, nb_requests: requests.Session, url: str, expected: List[Dict[str, Any]]
+    nb_api: pynetbox.api,
+    nb_requests: requests.Session,
+    url: str,
+    expected: List[Dict[str, Any]],
 ) -> None:
     resp = nb_requests.get(url)
     assert resp.status_code == 200
@@ -1212,7 +1219,29 @@ def test_devices_vms_attrs(
     assert resp_json == expected
 
 
-def test_tags_404(nb_api, nb_requests: requests.Session):
+def test_devices_vms_attrs_invalid_filter(
+    nb_api: pynetbox.api,
+    nb_requests: requests.Session,
+) -> None:
+    resp = nb_requests.get(
+        "http://localhost:8000/api/plugins/lists/devices-vms-attrs/?role=invalid-role"
+    )
+    assert resp.status_code == 400
+    assert resp.headers["Content-Type"] == "application/json"
+
+
+def test_devices_vms_invalid_filter(
+    nb_api: pynetbox.api,
+    nb_requests: requests.Session,
+) -> None:
+    resp = nb_requests.get(
+        "http://localhost:8000/api/plugins/lists/devices-vms/?role=invalid-role"
+    )
+    assert resp.status_code == 400
+    assert resp.headers["Content-Type"] == "application/json"
+
+
+def test_tags_404(nb_api: pynetbox.api, nb_requests: requests.Session):
     resp = nb_requests.get("http://localhost:8000/api/plugins/lists/bad-tag/?ips")
     assert resp.status_code == 404
 

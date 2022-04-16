@@ -4,6 +4,8 @@ from typing import Any, Iterable, List, Union
 from django.conf import settings
 from django.db.models import Q
 from django.db.models.query import QuerySet
+from django_filters import FilterSet
+from django_filters.utils import translate_validation
 from netaddr import cidr_merge, IPNetwork, iprange_to_cidrs
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
@@ -202,3 +204,9 @@ def _get_attr_r(attrs: List[str], obj: Any) -> Any:
 
 def get_attr_r(attr: str, obj: Any) -> Any:
     return _get_attr_r(attr.split(LOOKUP_SEP), obj)
+
+
+def filter_queryset(filterset: FilterSet) -> QuerySet:
+    if not filterset.is_valid():
+        raise translate_validation(filterset.errors)
+    return filterset.qs

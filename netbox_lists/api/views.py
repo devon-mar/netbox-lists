@@ -30,8 +30,8 @@ from rest_framework.viewsets import GenericViewSet
 from virtualization.filtersets import VirtualMachineFilterSet
 from virtualization.models import VirtualMachine
 
-from .filtersets import CustomPrefixFilterSet
 from .constants import AS_CIDR_PARAM_NAME, FAMILY_PARAM_NAME, SUMMARIZE_PARAM_NAME
+from .filtersets import CustomPrefixFilterSet
 from .renderers import PlainTextRenderer
 from .utils import (
     device_vm_primary_list,
@@ -44,6 +44,7 @@ from .utils import (
     iprange_to_cidrs,
     make_ip_list_response,
     set_prefixlen_max,
+    filter_queryset,
 )
 
 FAMILY_PARAM = openapi.Parameter(
@@ -217,16 +218,20 @@ class DevicesVMsListView(APIView):
         as_cidr = get_as_cidr_param(request)
         summarize = get_summarize_param(request)
 
-        devices_fs = DeviceFilterSet(
-            request.query_params,
-            queryset=Device.objects.restrict(request.user, "view").all(),
+        devices_qs = filter_queryset(
+            DeviceFilterSet(
+                request.query_params,
+                queryset=Device.objects.restrict(request.user, "view").all(),
+            )
         )
-        vms_fs = VirtualMachineFilterSet(
-            request.query_params,
-            queryset=VirtualMachine.objects.restrict(request.user, "view").all(),
+        vms_qs = filter_queryset(
+            VirtualMachineFilterSet(
+                request.query_params,
+                queryset=VirtualMachine.objects.restrict(request.user, "view").all(),
+            )
         )
-        devices = device_vm_primary_list(devices_fs.qs, family)
-        vms = device_vm_primary_list(vms_fs.qs, family)
+        devices = device_vm_primary_list(devices_qs, family)
+        vms = device_vm_primary_list(vms_qs, family)
         return make_ip_list_response(
             itertools.chain(devices, vms), summarize, use_net_ip=not as_cidr
         )
@@ -559,14 +564,18 @@ class DevicesVMsAttrsListView(APIView):
             else:
                 device_attrs.append(a)
 
-        devices = DeviceFilterSet(
-            request.query_params,
-            queryset=Device.objects.restrict(request.user, "view").all(),
-        ).qs
-        vms = VirtualMachineFilterSet(
-            request.query_params,
-            queryset=VirtualMachine.objects.restrict(request.user, "view").all(),
-        ).qs
+        devices = filter_queryset(
+            DeviceFilterSet(
+                request.query_params,
+                queryset=Device.objects.restrict(request.user, "view").all(),
+            )
+        )
+        vms = filter_queryset(
+            VirtualMachineFilterSet(
+                request.query_params,
+                queryset=VirtualMachine.objects.restrict(request.user, "view").all(),
+            )
+        )
         return Response(
             [self._to_dict(attrs, attrs, d) for d in vms]
             + [self._to_dict(device_attrs, attrs, d) for d in devices]
