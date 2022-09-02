@@ -10,7 +10,7 @@ pfSesnse/OPNSense's firewall aliases.
 
 This plugin also features endpoints for devices/VMs compatible with Prometheus' http_sd.
 
-This plugin supports NetBox v3.0, v3.1, and v3.2.
+This plugin supports NetBox v3.0, v3.1, v3.2, and v3.3.
 
 ## Features
 * Supports NetBox's object permissions.
