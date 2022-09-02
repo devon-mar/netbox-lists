@@ -15,7 +15,7 @@ pynetbox = "^6.1.3"
 requests = "^2.26.0"
 isort = "^5.10.1"
 black = "^22.1.0"
-mypy = "^0.941"
+mypy = "^0.971"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
