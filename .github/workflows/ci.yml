@@ -25,7 +25,7 @@ jobs:
 
       - name: Load cached venv
         id: cache-poetry-dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: .venv
           key: ${{ runner.os }}-venv-${{ hashFiles('**/poetry.lock') }}
@@ -70,7 +70,7 @@ jobs:
 
       - name: Load cached venv
         id: cache-poetry-dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: .venv
           key: ${{ runner.os }}-venv-${{ hashFiles('**/poetry.lock') }}
