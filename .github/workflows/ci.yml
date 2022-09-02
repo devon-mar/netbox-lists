@@ -5,6 +5,7 @@ name: CI
   push:
     branches:
       - "*"
+  pull_request:
 
 jobs:
   lint:
