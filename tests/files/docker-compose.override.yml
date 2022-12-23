@@ -8,3 +8,5 @@ services:
     environment:
       LOGLEVEL: DEBUG
       DEBUG: "true"
+    healthcheck:
+      start_period: 300s
