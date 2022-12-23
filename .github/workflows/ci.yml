@@ -100,3 +100,8 @@ jobs:
       - name: Run pytest
         run: |
           poetry run pytest -v
+
+      - name: Show Docker logs
+        if: ${{ always() }}
+        run: docker-compose logs
+        working-directory: ./netbox-docker/
