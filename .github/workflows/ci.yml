@@ -19,7 +19,7 @@ jobs:
           python-version: "3.10"
 
       - name: Install poetry
-        uses: snok/install-poetry@v1.3.2
+        uses: snok/install-poetry@v1.3.3
         with:
           virtualenvs-create: true
           virtualenvs-in-project: true
@@ -66,7 +66,7 @@ jobs:
           python-version: "3.10"
 
       - name: Install poetry
-        uses: snok/install-poetry@v1.3.2
+        uses: snok/install-poetry@v1.3.3
         with:
           virtualenvs-create: true
           virtualenvs-in-project: true
