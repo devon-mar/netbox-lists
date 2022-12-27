@@ -8,12 +8,13 @@ cp ./tests/files/docker-compose.override.yml ./netbox-docker/
 echo "Copying Dockerfile"
 cp ./tests/files/Dockerfile ./netbox-docker/
 
+echo "Copying plugins.py"
+cp ./tests/files/plugins.py ./netbox-docker/configuration/
+
 echo "Copying whl"
 WHL_FILE=$(ls ./dist/ | grep .whl)
 cp  "./dist/$WHL_FILE" ./netbox-docker/
 
-echo "Modify configuration.py"
-sed -i 's/^PLUGINS = .*/PLUGINS = \["netbox_lists"\]/' ./netbox-docker/configuration/configuration.py
 
 echo "::group::docker"
 
