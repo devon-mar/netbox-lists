@@ -1230,7 +1230,33 @@ def test_devices_vms_attrs_invalid_filter(
     assert resp.headers["Content-Type"] == "application/json"
 
 
+@pytest.mark.parametrize(
+    "url",
+    (
+        "http://localhost:8000/api/plugins/lists/devices-vms/?invalid_filter=test",
+        "http://localhost:8000/api/plugins/lists/prefixes/?invalid_filter=test",
+        "http://localhost:8000/api/plugins/lists/aggregates/?invalid_filter=test",
+        "http://localhost:8000/api/plugins/lists/services/?invalid_filter=test",
+        "http://localhost:8000/api/plugins/lists/devices/?invalid_filter=test",
+        "http://localhost:8000/api/plugins/lists/virtual-machines/?invalid_filter=test",
+        "http://localhost:8000/api/plugins/lists/ip-addresses/?invalid_filter=test",
+        "http://localhost:8000/api/plugins/lists/ip-ranges/?invalid_filter=test",
+        "http://localhost:8000/api/plugins/lists/prometheus-devices/?invalid_filter=test",
+        "http://localhost:8000/api/plugins/lists/prometheus-vms/?invalid_filter=test",
+        "http://localhost:8000/api/plugins/lists/tags/test-tag?invalid_param",
+    ),
+)
 def test_devices_vms_invalid_filter(
+    nb_api: pynetbox.api,
+    nb_requests: requests.Session,
+    url: str,
+) -> None:
+    resp = nb_requests.get(url)
+    assert resp.status_code == 400
+    assert resp.headers["Content-Type"] == "application/json"
+
+
+def test_devices_vms_invalid_filter_option(
     nb_api: pynetbox.api,
     nb_requests: requests.Session,
 ) -> None:

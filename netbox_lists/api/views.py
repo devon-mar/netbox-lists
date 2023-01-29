@@ -20,6 +20,7 @@ from ipam.filtersets import (
 from ipam.models import Aggregate, IPAddress, IPRange, Prefix, Service
 from netaddr import IPNetwork
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 from rest_framework.request import Request
@@ -35,6 +36,7 @@ from .filtersets import CustomPrefixFilterSet
 from .renderers import PlainTextRenderer
 from .utils import (
     device_vm_primary_list,
+    filter_queryset,
     get_as_cidr_param,
     get_attr_r,
     get_family_param,
@@ -44,7 +46,6 @@ from .utils import (
     iprange_to_cidrs,
     make_ip_list_response,
     set_prefixlen_max,
-    filter_queryset,
 )
 
 FAMILY_PARAM = openapi.Parameter(
@@ -67,10 +68,34 @@ SUMMARIZE_PARAM = openapi.Parameter(
     type=openapi.TYPE_BOOLEAN,
 )
 
+OTHER_PARAMS = {
+    FAMILY_PARAM_NAME,
+    AS_CIDR_PARAM_NAME,
+    SUMMARIZE_PARAM_NAME,
+    # for BrowsableAPIRenderer
+    "format",
+}
+
 
 class ListsRootView(APIRootView):
     def get_view_name(self):
         return "Lists"
+
+
+class InvalidFilterCheckMixin:
+    # Adapted from
+    # https://stackoverflow.com/questions/27182527/how-can-i-stop-django-rest-framework-to-show-all-records-if-query-parameter-is-w
+    def get_queryset(self):
+        other_params = getattr(self, "other_query_params", OTHER_PARAMS)
+        qs = super().get_queryset()
+        invalid_filters = set(self.request.query_params).difference(
+            other_params, self.filterset_class.get_filters()
+        )
+
+        if len(invalid_filters) > 0:
+            raise ValidationError({k: "Invalid filter." for k in invalid_filters})
+
+        return qs
 
 
 class ListsBaseViewSet(GenericViewSet):
@@ -89,7 +114,7 @@ class ListsBaseViewSet(GenericViewSet):
         self.queryset = self.queryset.restrict(request.user, "view")
 
 
-class ValuesListViewSet(ListsBaseViewSet):
+class ValuesListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
     @swagger_auto_schema(manual_parameters=[SUMMARIZE_PARAM])
     def list(self, request: Request, use_net_ip: bool = False) -> Response:
         queryset = self.filter_queryset(self.get_queryset())
@@ -108,7 +133,7 @@ class AggregateListViewSet(ValuesListViewSet):
     filterset_class = AggregateFilterSet
 
 
-class IPAddressListViewSet(ListsBaseViewSet):
+class IPAddressListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
     queryset = IPAddress.objects.values_list("address", flat=True).distinct()
     filterset_class = IPAddressFilterSet
 
@@ -122,12 +147,14 @@ class IPAddressListViewSet(ListsBaseViewSet):
         )
 
 
-class ServiceListviewSet(ListsBaseViewSet):
+class ServiceListviewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
     queryset = Service.objects.all()
     filterset_class = ServiceFilterSet
+    other_query_params = OTHER_PARAMS.union({"primary_ips"})
 
     @swagger_auto_schema(
         manual_parameters=[
+            FAMILY_PARAM,
             AS_CIDR_PARAM,
             SUMMARIZE_PARAM,
             openapi.Parameter(
@@ -152,7 +179,7 @@ class ServiceListviewSet(ListsBaseViewSet):
         )
 
 
-class DevicesListViewSet(ListsBaseViewSet):
+class DevicesListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
     queryset = Device.objects.all()
     filterset_class = DeviceFilterSet
 
@@ -175,7 +202,7 @@ class DevicesListViewSet(ListsBaseViewSet):
         )
 
 
-class VirtualMachinesListViewSet(ListsBaseViewSet):
+class VirtualMachinesListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
     queryset = VirtualMachine.objects.all()
     filterset_class = VirtualMachineFilterSet
 
@@ -208,12 +235,25 @@ class DevicesVMsListView(APIView):
     # Therefore, we use Device as the model.
     queryset = Device.objects.all()
 
+    def validate_filters(self):
+        valid_filters = OTHER_PARAMS.union(
+            set(DeviceFilterSet.get_filters()).intersection(
+                VirtualMachineFilterSet.get_filters()
+            )
+        )
+
+        invalid_filters = set(self.request.query_params).difference(valid_filters)
+        if len(invalid_filters) > 0:
+            raise ValidationError({k: "Invalid filter." for k in invalid_filters})
+
     @swagger_auto_schema(
         operation_description="Combined devices and virtual machines primary IPs list. "
-        "Use only parameters common to both devices and VMs ('role' can be used for both devices and VMs).",
+        "Use only parameters common to both devices and VMs.",
         manual_parameters=[SUMMARIZE_PARAM],
     )
     def get(self, request: Request) -> Response:
+        self.validate_filters()
+
         family = get_family_param(request)
         as_cidr = get_as_cidr_param(request)
         summarize = get_summarize_param(request)
@@ -237,7 +277,7 @@ class DevicesVMsListView(APIView):
         )
 
 
-class IPRangeListViewSet(ListsBaseViewSet):
+class IPRangeListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
     queryset = IPRange.objects.all()
     filterset_class = IPRangeFilterSet
 
@@ -375,9 +415,34 @@ class TagsListViewSet(ListsBaseViewSet):
             family,
         )
 
+    def check_query(self) -> None:
+        """Raises an exception if an invalid query param is used."""
+        valid_params = {
+            SUMMARIZE_PARAM_NAME,
+            FAMILY_PARAM_NAME,
+            "prefixes",
+            "aggregates",
+            "services",
+            "devices",
+            "vms",
+            "devices_primary",
+            "vms_primary",
+            "ips",
+            "service_primary_ips",
+            "all",
+            "all_primary",
+            # for BrowsableAPIRenderer
+            "format",
+        }
+
+        invalid_params = set(self.request.query_params).difference(valid_params)
+        if len(invalid_params) > 0:
+            raise ValidationError({k: "Invalid filter." for k in invalid_params})
+
     @swagger_auto_schema(
         manual_parameters=[
             SUMMARIZE_PARAM,
+            FAMILY_PARAM,
             openapi.Parameter(
                 "prefixes",
                 in_=openapi.IN_QUERY,
@@ -450,6 +515,8 @@ class TagsListViewSet(ListsBaseViewSet):
         if not slug:
             return Response("No slug", status.HTTP_400_BAD_REQUEST)
 
+        self.check_query()
+
         tag = get_object_or_404(Tag, slug=slug)
         family = get_family_param(request)
 
@@ -468,7 +535,7 @@ class TagsListViewSet(ListsBaseViewSet):
         )
 
 
-class PrometheusDeviceSD(GenericViewSet):
+class PrometheusDeviceSD(InvalidFilterCheckMixin, GenericViewSet):
     queryset = Device.objects.all()
     filterset_class = DeviceFilterSet
 
@@ -503,7 +570,7 @@ class PrometheusDeviceSD(GenericViewSet):
         return Response([self._sd_device(d) for d in queryset])
 
 
-class PrometheusVirtualMachineSD(GenericViewSet):
+class PrometheusVirtualMachineSD(InvalidFilterCheckMixin, GenericViewSet):
     queryset = VirtualMachine.objects.filter()
     filterset_class = VirtualMachineFilterSet
 
@@ -552,7 +619,18 @@ class DevicesVMsAttrsListView(APIView):
         """Convert a device or VM to a dictionary"""
         return {d_a: get_attr_r(a, device) for a, d_a in zip(attrs, display_attrs)}
 
+    def validate_filters(self):
+        valid_filters = set(DeviceFilterSet.get_filters()).intersection(
+            VirtualMachineFilterSet.get_filters()
+        )
+
+        invalid_filters = set(self.request.query_params).difference(valid_filters)
+        if len(invalid_filters) > 0:
+            raise ValidationError({k: "Invalid filter." for k in invalid_filters})
+
     def get(self, request: Request) -> Response:
+        self.validate_filters()
+
         attrs = settings.PLUGINS_CONFIG["netbox_lists"]["devices_vms_attrs"]
 
         device_attrs = []
