@@ -545,8 +545,12 @@ class PrometheusDeviceSD(InvalidFilterCheckMixin, GenericViewSet):
             "__meta_netbox_name": d.name,
             "__meta_netbox_status": d.status,
             "__meta_netbox_site_name": d.site.name,
+            "__meta_netbox_site_slug": d.site.slug,
+            "__meta_netbox_site_facility": d.site.facility,
             "__meta_netbox_role_name": d.device_role.name if d.device_role else "",
+            "__meta_netbox_role_slug": d.device_role.slug if d.device_role else "",
             "__meta_netbox_platform_name": d.platform.name if d.platform else "",
+            "__meta_netbox_platform_slug": d.platform.slug if d.platform else "",
             "__meta_netbox_primary_ip": str(d.primary_ip.address.ip)
             if d.primary_ip
             else "",
@@ -582,8 +586,12 @@ class PrometheusVirtualMachineSD(InvalidFilterCheckMixin, GenericViewSet):
             "__meta_netbox_status": vm.status,
             "__meta_netbox_cluster_name": vm.cluster.name,
             "__meta_netbox_site_name": vm.site.name if vm.site else "",
+            "__meta_netbox_site_slug": vm.site.slug if vm.site else "",
+            "__meta_netbox_site_facility": vm.site.facility if vm.site else "",
             "__meta_netbox_role_name": vm.role.name if vm.role else "",
+            "__meta_netbox_role_slug": vm.role.slug if vm.role else "",
             "__meta_netbox_platform_name": vm.platform.name if vm.platform else "",
+            "__meta_netbox_platform_slug": vm.platform.slug if vm.platform else "",
             "__meta_netbox_primary_ip": str(vm.primary_ip.address.ip)
             if vm.primary_ip
             else "",
