@@ -545,6 +545,7 @@ class PrometheusDeviceSD(InvalidFilterCheckMixin, GenericViewSet):
             "__meta_netbox_name": d.name,
             "__meta_netbox_status": d.status,
             "__meta_netbox_site_name": d.site.name,
+            "__meta_netbox_role_name": d.device_role.name if d.device_role else "",
             "__meta_netbox_platform_name": d.platform.name if d.platform else "",
             "__meta_netbox_primary_ip": str(d.primary_ip.address.ip)
             if d.primary_ip
