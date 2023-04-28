@@ -12,12 +12,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from taggit.managers import _TaggableManager
 
-from .constants import (
-    AS_CIDR_PARAM_NAME,
-    FAMILY_PARAM_NAME,
-    LOOKUP_SEP,
-    SUMMARIZE_PARAM_NAME,
-)
+from .constants import AS_CIDR_PARAM_NAME, FAMILY_PARAM_NAME, SUMMARIZE_PARAM_NAME
 
 
 def make_ip_list_response(
@@ -195,15 +190,23 @@ def _json_rep(obj: Any) -> Union[str, int, bool, list, dict, None]:
         return str(obj)
 
 
-def _get_attr_r(attrs: List[str], obj: Any) -> Any:
-    if len(attrs) == 0 or obj is None:
-        return _json_rep(obj)
+def _get_attr(attrs: Iterable[str], obj: Any) -> Any:
+    for a in attrs:
+        if obj is None:
+            return None
+        obj = getattr(obj, a, None)
+    return obj
 
-    return _get_attr_r(attrs[1:], getattr(obj, attrs[0]))
+
+def get_attr_str(attrs: Iterable[str], obj: Any) -> str:
+    val = _get_attr(attrs, obj)
+    if val is None:
+        return ""
+    return str(val)
 
 
-def get_attr_r(attr: str, obj: Any) -> Any:
-    return _get_attr_r(attr.split(LOOKUP_SEP), obj)
+def get_attr_json(attrs: Iterable[str], obj: Any) -> Any:
+    return _json_rep(_get_attr(attrs, obj))
 
 
 def filter_queryset(filterset: FilterSet) -> QuerySet:
