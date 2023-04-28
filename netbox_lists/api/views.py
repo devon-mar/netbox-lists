@@ -541,7 +541,7 @@ class PrometheusDeviceSD(InvalidFilterCheckMixin, GenericViewSet):
 
     def _sd_device(self, d: Device) -> Dict[str, Any]:
         labels = {
-            "__meta_netbox_id": d.id,
+            "__meta_netbox_id": str(d.id),
             "__meta_netbox_name": d.name,
             "__meta_netbox_status": d.status,
             "__meta_netbox_site_name": d.site.name,
@@ -558,7 +558,7 @@ class PrometheusDeviceSD(InvalidFilterCheckMixin, GenericViewSet):
             "__meta_netbox_serial": d.serial,
         }
         for k, v in d.custom_field_data.items():
-            labels[f"__meta_netbox_cf_{k}"] = v
+            labels[f"__meta_netbox_cf_{k}"] = str(v)
 
         return {
             "targets": [str(d.primary_ip.address.ip) if d.primary_ip else d.name],
