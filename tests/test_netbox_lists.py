@@ -1084,6 +1084,9 @@ def test_prom_sd(
             assert have["labels"][k] == v, f"Target {want['targets']}"
             assert isinstance(have["labels"][k], str)
 
+        for k, v in have["labels"].items():
+            assert isinstance(v, str), f"{k}: value was not a str, was {type(v)}"
+
 
 @pytest.mark.parametrize(
     "url,expected",
