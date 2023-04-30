@@ -59,15 +59,71 @@ PLUGINS_CONFIG = {
         # Summarize responses
         "summarize": True,
         # A list of attributes for the devices-vms-attrs endpoint
-        # `role` will automatically be converted to `device_role` for devices.
+        #
+        # NOTE: This used to be a list of '__' strings. It should now be a
+        # list of tuples/list. Support for strings will be REMOVED in the next
+        # major release.
         "devices_vms_attrs": [
-            "id",
-            "name",
-            "role__slug",
-            "platform__slug",
-            "primary_ip__address",
-            "tags",
-        ]
+            ("id",),
+            ("name",),
+            # `role` will automatically be converted to `device_role` for devices.
+            # Don't use `device_role`.
+            ("role", "slug"),
+            ("platform", "slug"),
+            ("primary_ip", "address"),
+            ("tags",),
+        ],
+        # Tuple/list of attributes to use for Prometheus VM SD target. Defaults are shown.
+        #
+        # If all attributes return None, the device's name will be used.
+        "prometheus_vm_sd_target": (
+            # For a custom field
+            # ("cf", "fqdn"),
+            # If this returns none, try Name.
+            ("primary_ip", "address", "ip"),
+            ("name",), # not necessary
+        ),
+        # Dictionary of label to VM attribute for Prometheus VM SD. Defaults are shown.
+        "prometheus_vm_sd_labels": {
+            "__meta_netbox_id": ("id",),
+            "__meta_netbox_name": ("name",),
+            "__meta_netbox_status": ("status",),
+            "__meta_netbox_cluster_name": (
+                "cluster",
+                "name",
+            ),
+            "__meta_netbox_site_name": ("site", "name"),
+            "__meta_netbox_role_name": ("role", "name"),
+            "__meta_netbox_platform_name": ("platform", "name"),
+            "__meta_netbox_primary_ip": ("primary_ip", "address", "ip"),
+            "__meta_netbox_primary_ip4": ("primary_ip4", "address", "ip"),
+            "__meta_netbox_primary_ip6": ("primary_ip6", "address", "ip"),
+            # A custom field. Will be an empty string if None.
+            # "__meta_netbox_fqdn": ("cf", "fqdn"),
+        },
+        # Tuple/list of attributes to use for Prometheus device SD target. Defaults are shown.
+        #
+        # If all attributes return None, the device's name will be used.
+        "prometheus_device_sd_target": (
+            # For a custom field
+            # ("cf", "fqdn"),
+            ("primary_ip", "address", "ip"),
+            ("name",), # not necessary
+        ),
+        # Dictionary of label to device attribute for Prometheus device SD. Defaults are shown.
+        "prometheus_device_sd_labels": {
+            "__meta_netbox_id": ("id",),
+            "__meta_netbox_name": ("name",),
+            "__meta_netbox_status": ("status",),
+            "__meta_netbox_site_name": ("site", "name"),
+            "__meta_netbox_platform_name": ("platform", "name"),
+            "__meta_netbox_primary_ip": ("primary_ip", "address", "ip"),
+            "__meta_netbox_primary_ip4": ("primary_ip4", "address", "ip"),
+            "__meta_netbox_primary_ip6": ("primary_ip6", "address", "ip"),
+            "__meta_netbox_serial": ("serial",),
+            # A custom field. Will be an empty string if None.
+            # "__meta_netbox_fqdn": ("cf", "fqdn"),
+        },
     }
 }
 ```

@@ -17,13 +17,47 @@ class ListsPluginConfig(PluginConfig):
         "service_primary_ips": True,
         "summarize": True,
         "devices_vms_attrs": [
-            "id",
-            "name",
-            "role__slug",
-            "platform__slug",
-            "primary_ip__address",
-            "tags",
+            ("id",),
+            ("name",),
+            ("role", "slug"),
+            ("platform", "slug"),
+            ("primary_ip", "address"),
+            ("tags",),
         ],
+        "prometheus_vm_sd_target": (
+            ("primary_ip", "address", "ip"),
+            ("name",),
+        ),
+        "prometheus_vm_sd_labels": {
+            "__meta_netbox_id": ("id",),
+            "__meta_netbox_name": ("name",),
+            "__meta_netbox_status": ("status",),
+            "__meta_netbox_cluster_name": (
+                "cluster",
+                "name",
+            ),
+            "__meta_netbox_site_name": ("site", "name"),
+            "__meta_netbox_role_name": ("role", "name"),
+            "__meta_netbox_platform_name": ("platform", "name"),
+            "__meta_netbox_primary_ip": ("primary_ip", "address", "ip"),
+            "__meta_netbox_primary_ip4": ("primary_ip4", "address", "ip"),
+            "__meta_netbox_primary_ip6": ("primary_ip6", "address", "ip"),
+        },
+        "prometheus_device_sd_target": (
+            ("primary_ip", "address", "ip"),
+            ("name",),
+        ),
+        "prometheus_device_sd_labels": {
+            "__meta_netbox_id": ("id",),
+            "__meta_netbox_name": ("name",),
+            "__meta_netbox_status": ("status",),
+            "__meta_netbox_site_name": ("site", "name"),
+            "__meta_netbox_platform_name": ("platform", "name"),
+            "__meta_netbox_primary_ip": ("primary_ip", "address", "ip"),
+            "__meta_netbox_primary_ip4": ("primary_ip4", "address", "ip"),
+            "__meta_netbox_primary_ip6": ("primary_ip6", "address", "ip"),
+            "__meta_netbox_serial": ("serial",),
+        },
     }
 
 

@@ -19,7 +19,7 @@ from ipam.filtersets import (
 )
 from ipam.models import Aggregate, IPAddress, IPRange, Prefix, Service
 from netaddr import IPNetwork
-from rest_framework import status
+from rest_framework import mixins, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
@@ -34,11 +34,12 @@ from virtualization.models import VirtualMachine
 from .constants import AS_CIDR_PARAM_NAME, FAMILY_PARAM_NAME, SUMMARIZE_PARAM_NAME
 from .filtersets import CustomPrefixFilterSet
 from .renderers import PlainTextRenderer
+from .serializers import PrometheusDeviceSerializer, PrometheusVMSerializer
 from .utils import (
     device_vm_primary_list,
     filter_queryset,
     get_as_cidr_param,
-    get_attr_r,
+    get_attr_json,
     get_family_param,
     get_service_ips,
     get_summarize_param,
@@ -100,6 +101,7 @@ class InvalidFilterCheckMixin:
 
 class ListsBaseViewSet(GenericViewSet):
     renderer_classes = [JSONRenderer, BrowsableAPIRenderer, PlainTextRenderer]
+    pagination_class = None
 
     # Adapted from
     # https://github.com/netbox-community/netbox/blob/a33e47780b42f49f4ea536bace1617fa7dda31ab/
@@ -535,75 +537,20 @@ class TagsListViewSet(ListsBaseViewSet):
         )
 
 
-class PrometheusDeviceSD(InvalidFilterCheckMixin, GenericViewSet):
+class PrometheusDeviceSD(
+    InvalidFilterCheckMixin, mixins.ListModelMixin, ListsBaseViewSet
+):
     queryset = Device.objects.all()
     filterset_class = DeviceFilterSet
-
-    def _sd_device(self, d: Device) -> Dict[str, Any]:
-        labels = {
-            "__meta_netbox_id": str(d.id),
-            "__meta_netbox_name": d.name,
-            "__meta_netbox_status": d.status,
-            "__meta_netbox_site_name": d.site.name,
-            "__meta_netbox_platform_name": d.platform.name if d.platform else "",
-            "__meta_netbox_primary_ip": str(d.primary_ip.address.ip)
-            if d.primary_ip
-            else "",
-            "__meta_netbox_primary_ip4": str(d.primary_ip4.address.ip)
-            if d.primary_ip4
-            else "",
-            "__meta_netbox_primary_ip6": str(d.primary_ip6.address.ip)
-            if d.primary_ip6
-            else "",
-            "__meta_netbox_serial": d.serial,
-        }
-        for k, v in d.custom_field_data.items():
-            labels[f"__meta_netbox_cf_{k}"] = str(v)
-
-        return {
-            "targets": [str(d.primary_ip.address.ip) if d.primary_ip else d.name],
-            "labels": labels,
-        }
-
-    def list(self, request: Request) -> Response:
-        queryset = self.filter_queryset(self.get_queryset())
-        return Response([self._sd_device(d) for d in queryset])
+    serializer_class = PrometheusDeviceSerializer
 
 
-class PrometheusVirtualMachineSD(InvalidFilterCheckMixin, GenericViewSet):
+class PrometheusVirtualMachineSD(
+    InvalidFilterCheckMixin, mixins.ListModelMixin, ListsBaseViewSet
+):
     queryset = VirtualMachine.objects.filter()
     filterset_class = VirtualMachineFilterSet
-
-    def _sd_vm(self, vm: VirtualMachine) -> Dict[str, Any]:
-        labels = {
-            "__meta_netbox_id": str(vm.id),
-            "__meta_netbox_name": vm.name,
-            "__meta_netbox_status": vm.status,
-            "__meta_netbox_cluster_name": vm.cluster.name,
-            "__meta_netbox_site_name": vm.site.name if vm.site else "",
-            "__meta_netbox_role_name": vm.role.name if vm.role else "",
-            "__meta_netbox_platform_name": vm.platform.name if vm.platform else "",
-            "__meta_netbox_primary_ip": str(vm.primary_ip.address.ip)
-            if vm.primary_ip
-            else "",
-            "__meta_netbox_primary_ip4": str(vm.primary_ip4.address.ip)
-            if vm.primary_ip4
-            else "",
-            "__meta_netbox_primary_ip6": str(vm.primary_ip6.address.ip)
-            if vm.primary_ip6
-            else "",
-        }
-        for k, v in vm.custom_field_data.items():
-            labels[f"__meta_netbox_cf_{k}"] = str(v)
-
-        return {
-            "targets": [str(vm.primary_ip.address.ip) if vm.primary_ip else vm.name],
-            "labels": labels,
-        }
-
-    def list(self, request: Request) -> Response:
-        queryset = self.filter_queryset(self.get_queryset())
-        return Response([self._sd_vm(vm) for vm in queryset])
+    serializer_class = PrometheusVMSerializer
 
 
 class DevicesVMsAttrsListView(APIView):
@@ -612,12 +559,15 @@ class DevicesVMsAttrsListView(APIView):
 
     def _to_dict(
         self,
-        attrs: List[str],
-        display_attrs: List[str],
+        attrs: Iterable[Iterable[str]],
+        display_attrs: Iterable[Iterable[str]],
         device: Union[Device, VirtualMachine],
     ) -> Dict[str, Any]:
         """Convert a device or VM to a dictionary"""
-        return {d_a: get_attr_r(a, device) for a, d_a in zip(attrs, display_attrs)}
+        return {
+            "__".join(d_a): get_attr_json(a, device)
+            for a, d_a in zip(attrs, display_attrs)
+        }
 
     def validate_filters(self):
         valid_filters = set(DeviceFilterSet.get_filters()).intersection(
@@ -633,12 +583,13 @@ class DevicesVMsAttrsListView(APIView):
 
         attrs = settings.PLUGINS_CONFIG["netbox_lists"]["devices_vms_attrs"]
 
-        device_attrs = []
+        # TODO remove in next major release
+        attrs = [a.split("__") if isinstance(a, str) else a for a in attrs]
+
+        device_attrs: List[Iterable[str]] = []
         for a in attrs:
-            if a == "role":
-                device_attrs.append("role")
-            elif a.startswith("role__"):
-                device_attrs.append(a.replace("role__", "device_role__"))
+            if len(a) > 0 and a[0] == "role":
+                device_attrs.append(("device_role", *a[1:]))
             else:
                 device_attrs.append(a)
 
