@@ -190,23 +190,26 @@ def _json_rep(obj: Any) -> Union[str, int, bool, list, dict, None]:
         return str(obj)
 
 
-def _get_attr(attrs: Iterable[str], obj: Any) -> Any:
+def get_attr(attrs: Iterable[str], obj: Any) -> Any:
     for a in attrs:
         if obj is None:
             return None
-        obj = getattr(obj, a, None)
+        elif isinstance(obj, dict):
+            obj = obj.get(a)
+        else:
+            obj = getattr(obj, a, None)
     return obj
 
 
 def get_attr_str(attrs: Iterable[str], obj: Any) -> str:
-    val = _get_attr(attrs, obj)
+    val = get_attr(attrs, obj)
     if val is None:
         return ""
     return str(val)
 
 
 def get_attr_json(attrs: Iterable[str], obj: Any) -> Any:
-    return _json_rep(_get_attr(attrs, obj))
+    return _json_rep(get_attr(attrs, obj))
 
 
 def filter_queryset(filterset: FilterSet) -> QuerySet:

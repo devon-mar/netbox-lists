@@ -19,7 +19,7 @@ from ipam.filtersets import (
 )
 from ipam.models import Aggregate, IPAddress, IPRange, Prefix, Service
 from netaddr import IPNetwork
-from rest_framework import status
+from rest_framework import mixins, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
@@ -34,12 +34,12 @@ from virtualization.models import VirtualMachine
 from .constants import AS_CIDR_PARAM_NAME, FAMILY_PARAM_NAME, SUMMARIZE_PARAM_NAME
 from .filtersets import CustomPrefixFilterSet
 from .renderers import PlainTextRenderer
+from .serializers import PrometheusDeviceSerializer, PrometheusVMSerializer
 from .utils import (
     device_vm_primary_list,
     filter_queryset,
     get_as_cidr_param,
     get_attr_json,
-    get_attr_str,
     get_family_param,
     get_service_ips,
     get_summarize_param,
@@ -101,6 +101,7 @@ class InvalidFilterCheckMixin:
 
 class ListsBaseViewSet(GenericViewSet):
     renderer_classes = [JSONRenderer, BrowsableAPIRenderer, PlainTextRenderer]
+    pagination_class = None
 
     # Adapted from
     # https://github.com/netbox-community/netbox/blob/a33e47780b42f49f4ea536bace1617fa7dda31ab/
@@ -536,58 +537,20 @@ class TagsListViewSet(ListsBaseViewSet):
         )
 
 
-class PrometheusDeviceSD(InvalidFilterCheckMixin, GenericViewSet):
+class PrometheusDeviceSD(
+    InvalidFilterCheckMixin, mixins.ListModelMixin, ListsBaseViewSet
+):
     queryset = Device.objects.all()
     filterset_class = DeviceFilterSet
-
-    def _sd_device(self, d: Device) -> Dict[str, Any]:
-        labels = {
-            k: get_attr_str(v, d)
-            for k, v in settings.PLUGINS_CONFIG["netbox_lists"][
-                "prometheus_device_sd_labels"
-            ].items()
-        }
-
-        # TODO: remove in next major release
-        # kept for compatibility
-        for k, v in d.custom_field_data.items():
-            labels[f"__meta_netbox_cf_{k}"] = str(v)
-
-        return {
-            "targets": [str(d.primary_ip.address.ip) if d.primary_ip else d.name],
-            "labels": labels,
-        }
-
-    def list(self, request: Request) -> Response:
-        queryset = self.filter_queryset(self.get_queryset())
-        return Response([self._sd_device(d) for d in queryset])
+    serializer_class = PrometheusDeviceSerializer
 
 
-class PrometheusVirtualMachineSD(InvalidFilterCheckMixin, GenericViewSet):
+class PrometheusVirtualMachineSD(
+    InvalidFilterCheckMixin, mixins.ListModelMixin, ListsBaseViewSet
+):
     queryset = VirtualMachine.objects.filter()
     filterset_class = VirtualMachineFilterSet
-
-    def _sd_vm(self, vm: VirtualMachine) -> Dict[str, Any]:
-        labels = {
-            k: get_attr_str(v, vm)
-            for k, v in settings.PLUGINS_CONFIG["netbox_lists"][
-                "prometheus_vm_sd_labels"
-            ].items()
-        }
-
-        # TODO: remove in next major release
-        # kept for compatibility
-        for k, v in vm.custom_field_data.items():
-            labels[f"__meta_netbox_cf_{k}"] = str(v)
-
-        return {
-            "targets": [str(vm.primary_ip.address.ip) if vm.primary_ip else vm.name],
-            "labels": labels,
-        }
-
-    def list(self, request: Request) -> Response:
-        queryset = self.filter_queryset(self.get_queryset())
-        return Response([self._sd_vm(vm) for vm in queryset])
+    serializer_class = PrometheusVMSerializer
 
 
 class DevicesVMsAttrsListView(APIView):

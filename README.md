@@ -73,6 +73,14 @@ PLUGINS_CONFIG = {
             ("primary_ip", "address"),
             ("tags",),
         ],
+        # Tuple/list of attributes to use for target. Defaults are shown.
+        #
+        # If all attributes return None, the device's name will be used.
+        "prometheus_vm_sd_target": (
+            # If this returns none, try Name.
+            ("primary_ip", "address", "ip"),
+            ("name",), # not necessary
+        ),
         # Dictionary of label to device attribute. Defaults are shown.
         "prometheus_vm_sd_labels": {
             "__meta_netbox_id": ("id",),
@@ -89,6 +97,14 @@ PLUGINS_CONFIG = {
             "__meta_netbox_primary_ip4": ("primary_ip4", "address", "ip"),
             "__meta_netbox_primary_ip6": ("primary_ip6", "address", "ip"),
         },
+        # Tuple/list of attributes to use for target. Defaults are shown.
+        #
+        # If all attributes return None, the VM's name will be used.
+        "prometheus_vm_sd_target": (
+        "prometheus_device_sd_target": (
+            ("primary_ip", "address", "ip"),
+            ("name",), # not necessary
+        ),
         # Dictionary of label to device attribute. Defaults are shown.
         "prometheus_device_sd_labels": {
             "__meta_netbox_id": ("id",),

@@ -24,6 +24,10 @@ class ListsPluginConfig(PluginConfig):
             ("primary_ip", "address"),
             ("tags",),
         ],
+        "prometheus_vm_sd_target": (
+            ("primary_ip", "address", "ip"),
+            ("name",),
+        ),
         "prometheus_vm_sd_labels": {
             "__meta_netbox_id": ("id",),
             "__meta_netbox_name": ("name",),
@@ -39,6 +43,10 @@ class ListsPluginConfig(PluginConfig):
             "__meta_netbox_primary_ip4": ("primary_ip4", "address", "ip"),
             "__meta_netbox_primary_ip6": ("primary_ip6", "address", "ip"),
         },
+        "prometheus_device_sd_target": (
+            ("primary_ip", "address", "ip"),
+            ("name",),
+        ),
         "prometheus_device_sd_labels": {
             "__meta_netbox_id": ("id",),
             "__meta_netbox_name": ("name",),
