@@ -73,15 +73,17 @@ PLUGINS_CONFIG = {
             ("primary_ip", "address"),
             ("tags",),
         ],
-        # Tuple/list of attributes to use for target. Defaults are shown.
+        # Tuple/list of attributes to use for Prometheus VM SD target. Defaults are shown.
         #
         # If all attributes return None, the device's name will be used.
         "prometheus_vm_sd_target": (
+            # For a custom field
+            # ("cf", "fqdn"),
             # If this returns none, try Name.
             ("primary_ip", "address", "ip"),
             ("name",), # not necessary
         ),
-        # Dictionary of label to device attribute. Defaults are shown.
+        # Dictionary of label to VM attribute for Prometheus VM SD. Defaults are shown.
         "prometheus_vm_sd_labels": {
             "__meta_netbox_id": ("id",),
             "__meta_netbox_name": ("name",),
@@ -96,16 +98,19 @@ PLUGINS_CONFIG = {
             "__meta_netbox_primary_ip": ("primary_ip", "address", "ip"),
             "__meta_netbox_primary_ip4": ("primary_ip4", "address", "ip"),
             "__meta_netbox_primary_ip6": ("primary_ip6", "address", "ip"),
+            # A custom field. Will be an empty string if None.
+            # "__meta_netbox_fqdn": ("cf", "fqdn"),
         },
-        # Tuple/list of attributes to use for target. Defaults are shown.
+        # Tuple/list of attributes to use for Prometheus device SD target. Defaults are shown.
         #
-        # If all attributes return None, the VM's name will be used.
-        "prometheus_vm_sd_target": (
+        # If all attributes return None, the device's name will be used.
         "prometheus_device_sd_target": (
+            # For a custom field
+            # ("cf", "fqdn"),
             ("primary_ip", "address", "ip"),
             ("name",), # not necessary
         ),
-        # Dictionary of label to device attribute. Defaults are shown.
+        # Dictionary of label to device attribute for Prometheus device SD. Defaults are shown.
         "prometheus_device_sd_labels": {
             "__meta_netbox_id": ("id",),
             "__meta_netbox_name": ("name",),
@@ -116,6 +121,8 @@ PLUGINS_CONFIG = {
             "__meta_netbox_primary_ip4": ("primary_ip4", "address", "ip"),
             "__meta_netbox_primary_ip6": ("primary_ip6", "address", "ip"),
             "__meta_netbox_serial": ("serial",),
+            # A custom field. Will be an empty string if None.
+            # "__meta_netbox_fqdn": ("cf", "fqdn"),
         },
     }
 }
