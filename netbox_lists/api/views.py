@@ -68,6 +68,9 @@ SUMMARIZE_PARAM = openapi.Parameter(
     description="Summarize the IPs/Prefixes before returning them.",
     type=openapi.TYPE_BOOLEAN,
 )
+IP_PREFIX_RESPONSES = {
+    200: openapi.Schema(type="array", items=openapi.Schema(type="string"))
+}
 
 OTHER_PARAMS = {
     FAMILY_PARAM_NAME,
@@ -117,7 +120,9 @@ class ListsBaseViewSet(GenericViewSet):
 
 
 class ValuesListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
-    @swagger_auto_schema(manual_parameters=[SUMMARIZE_PARAM])
+    @swagger_auto_schema(
+        manual_parameters=[SUMMARIZE_PARAM], responses=IP_PREFIX_RESPONSES
+    )
     def list(self, request: Request, use_net_ip: bool = False) -> Response:
         queryset = self.filter_queryset(self.get_queryset())
         return make_ip_list_response(
@@ -139,7 +144,9 @@ class IPAddressListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
     queryset = IPAddress.objects.values_list("address", flat=True).distinct()
     filterset_class = IPAddressFilterSet
 
-    @swagger_auto_schema(manual_parameters=[AS_CIDR_PARAM])
+    @swagger_auto_schema(
+        manual_parameters=[AS_CIDR_PARAM], responses=IP_PREFIX_RESPONSES
+    )
     def list(self, request) -> Response:
         queryset = self.filter_queryset(self.get_queryset())
         return make_ip_list_response(
@@ -165,7 +172,8 @@ class ServiceListviewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
                 description="Return Primary IPs if the service doesn't have any assigned IPs.",
                 type=openapi.TYPE_BOOLEAN,
             ),
-        ]
+        ],
+        responses=IP_PREFIX_RESPONSES,
     )
     def list(self, request: Request) -> Response:
         as_cidr = get_as_cidr_param(request)
@@ -188,6 +196,7 @@ class DevicesListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
     @swagger_auto_schema(
         operation_description="Returns the primary IPs of devices.",
         manual_parameters=[AS_CIDR_PARAM, FAMILY_PARAM, SUMMARIZE_PARAM],
+        responses=IP_PREFIX_RESPONSES,
     )
     def list(self, request: Request) -> Response:
         family = get_family_param(request)
@@ -211,6 +220,7 @@ class VirtualMachinesListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
     @swagger_auto_schema(
         operation_description="Returns the primary IPs of virtual machines.",
         manual_parameters=[AS_CIDR_PARAM, FAMILY_PARAM],
+        responses=IP_PREFIX_RESPONSES,
     )
     def list(self, request: Request) -> Response:
         family = get_family_param(request)
@@ -252,6 +262,7 @@ class DevicesVMsListView(APIView):
         operation_description="Combined devices and virtual machines primary IPs list. "
         "Use only parameters common to both devices and VMs.",
         manual_parameters=[SUMMARIZE_PARAM],
+        responses=IP_PREFIX_RESPONSES,
     )
     def get(self, request: Request) -> Response:
         self.validate_filters()
@@ -286,6 +297,7 @@ class IPRangeListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
     @swagger_auto_schema(
         operation_description="Returns a list of CIDRs for each range.",
         manual_parameters=[SUMMARIZE_PARAM],
+        responses=IP_PREFIX_RESPONSES,
     )
     def list(self, request: Request) -> Response:
         queryset = self.filter_queryset(self.get_queryset())
@@ -511,7 +523,8 @@ class TagsListViewSet(ListsBaseViewSet):
                 description="Include ALL of the above options, using Device/VM primary IPs.",
                 type=openapi.TYPE_BOOLEAN,
             ),
-        ]
+        ],
+        responses=IP_PREFIX_RESPONSES,
     )
     def retrieve(self, request, slug=None) -> Response:
         if not slug:
