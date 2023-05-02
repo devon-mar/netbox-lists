@@ -15,6 +15,8 @@ This plugin supports NetBox v3.0, v3.1, v3.2, v3.3, and v3.4.
 ## Features
 * Supports NetBox's object permissions.
 
+* [Ansible](https://galaxy.ansible.com/devon_mar/nblists) and [Terraform](https://registry.terraform.io/providers/devon-mar/nblists/latest/docs) integrations.
+
 * Prometheus http_sd endpoint for devices/vms.
 
 * API documented using OpenAPI.
@@ -163,6 +165,44 @@ https://netbox.example.com/api/plugins/lists/tags/internal/?ips&prefixes
 7. Get all prefixes and IPs with the tag `internal` without summarization
 ```
 https://netbox.example.com/api/plugins/lists/tags/internal/?ips&prefixes&summarize=false
+```
+
+### Ansible Usage Example
+
+Using the [nblists collection](https://galaxy.ansible.com/devon_mar/nblists):
+
+```yaml
+# Build an ACL using all NetBox prefixes with the role 'data'
+- name: Build ACL 10
+  ansible.builtin.set_fact:
+    acl_10_aces: "{{ acl_10_aces | default([]) + ace }}"
+  vars:
+    ace:
+      - grant: permit
+        source:
+          address: "{{ item | ansible.utils.ipaddr('network') }}"
+          wildcard_bits: "{{ item | ansible.utils.ipaddr('wildcard') }}"
+  loop: "{{ q('devon_mar.nblists.list', 'prefixes', role='data') }}"
+- name: Ensure ACLs are configured
+  cisco.ios.ios_acls:
+    config:
+      - afi: ipv4
+        acls:
+          - name: 10
+            aces: "{{ acl_10_aces }}"
+```
+
+### Terraform Usage Example
+
+Using the [nblists provider](https://registry.terraform.io/providers/devon-mar/nblists/latest/docs):
+
+```terraform
+data "nblists_list" "special" {
+    endpoint = "ip-addresses"
+    filter = {
+        tag = ["special"]
+    }
+}
 ```
 
 ### Oxidized usage
