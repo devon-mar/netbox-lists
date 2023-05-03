@@ -592,7 +592,8 @@ class TagsListViewSet(ListsBaseViewSet):
             OpenApiParameter(
                 name="service_primary_ips",
                 location="query",
-                description="Return primary IPs if the service doesn't have any assigned IPs. Only used if `services=True`.",
+                description="Return primary IPs if the service doesn't have any assigned IPs. "
+                "Only used if `services=True`.",
                 type=bool,
                 default=settings.PLUGINS_CONFIG["netbox_lists"]["service_primary_ips"],
             ),
