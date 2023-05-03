@@ -45,16 +45,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - container_tag: v3.0
-            netbox_docker_tag: 1.4.1
-          - container_tag: v3.1
-            netbox_docker_tag: 1.4.1
-          - container_tag: v3.2
-            netbox_docker_tag: 1.6.1
-          - container_tag: v3.3
-            netbox_docker_tag: 2.2.0
-          - container_tag: v3.4
-            netbox_docker_tag: 2.4.0
+          - container_tag: v3.5
+            netbox_docker_tag: 2.6.1
 
     runs-on: ubuntu-latest
     steps:
