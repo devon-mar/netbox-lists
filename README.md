@@ -62,9 +62,8 @@ PLUGINS_CONFIG = {
         "summarize": True,
         # A list of attributes for the devices-vms-attrs endpoint
         #
-        # NOTE: This used to be a list of '__' strings. It should now be a
-        # list of tuples/list. Support for strings will be REMOVED in the next
-        # major release.
+        # Attributes will be joined with "__" in the returned object.
+        # eg. ("primary_ip", "address") -> primary_ip__address
         "devices_vms_attrs": [
             ("id",),
             ("name",),
@@ -90,10 +89,7 @@ PLUGINS_CONFIG = {
             "__meta_netbox_id": ("id",),
             "__meta_netbox_name": ("name",),
             "__meta_netbox_status": ("status",),
-            "__meta_netbox_cluster_name": (
-                "cluster",
-                "name",
-            ),
+            "__meta_netbox_cluster_name": ("cluster", "name"),
             "__meta_netbox_site_name": ("site", "name"),
             "__meta_netbox_role_name": ("role", "name"),
             "__meta_netbox_platform_name": ("platform", "name"),

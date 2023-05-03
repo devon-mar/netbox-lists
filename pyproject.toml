@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "netbox-lists"
-version = "2.2.0"
+version = "3.0.0"
 description = ""
 authors = ["Devon Mar <devonm@mdmm.ca>"]
 
@@ -42,7 +42,6 @@ module = [
     "taggit.*",
     "django_filters",
     "netaddr.*",
-    "drf_yasg.*",
     # NetBox
     "dcim.*",
     "ipam.*",

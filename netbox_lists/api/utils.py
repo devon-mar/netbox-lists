@@ -125,7 +125,7 @@ def get_service_ips(
 def get_svc_primary_ips_param(param: str, req: Request) -> bool:
     val = req.query_params.get(param, None)
     if val is None:
-        return settings.PLUGINS_CONFIG["netbox_lists"].get("service_primary_ips", True)
+        return settings.PLUGINS_CONFIG["netbox_lists"]["service_primary_ips"]
     elif val.lower() == "true":
         return True
     elif val.lower() == "false":
