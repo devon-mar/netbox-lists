@@ -56,6 +56,12 @@ def nb_api():
         "http://localhost:8000", token="0123456789abcdef0123456789abcdef01234567"
     )
 
+    nb_create(
+        api.extras.custom_fields,
+        name="fqdn",
+        type="text",
+        content_types=["dcim.device", "virtualization.virtualmachine"],
+    )
     test_tag = nb_create(api.extras.tags, name="Test Tag", slug="test-tag")
     test_device_tag = nb_create(
         api.extras.tags, name="Test Device Tag", slug="test-device-tag"
@@ -86,6 +92,7 @@ def nb_api():
         device_role=test_device_role.id,
         site=test_site.id,
         tags=[test_device_tag.id],
+        custom_fields={"fqdn": "device-1.example.com"},
     )
     test_device_1_intf_1 = nb_create(
         api.dcim.interfaces,
@@ -209,6 +216,7 @@ def nb_api():
         cluster=test_cluster.id,
         role=test_device_role.id,
         tags=[test_tag.id],
+        custom_fields={"fqdn": "vm-1.example.com"},
     )
     test_vm_1_intf_1 = nb_create(
         api.virtualization.interfaces, name="eth0", virtual_machine=test_vm_1.id
@@ -955,6 +963,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_serial": "",
                         "__meta_netbox_site_name": "Test Site",
                         "__meta_netbox_status": "active",
+                        "__meta_netbox_fqdn": "device-1.example.com",
                     },
                 },
                 {
@@ -969,6 +978,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_serial": "",
                         "__meta_netbox_site_name": "Test Site",
                         "__meta_netbox_status": "active",
+                        "__meta_netbox_fqdn": "",
                     },
                 },
                 {
@@ -983,6 +993,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_serial": "",
                         "__meta_netbox_site_name": "Test Site",
                         "__meta_netbox_status": "active",
+                        "__meta_netbox_fqdn": "",
                     },
                 },
             ],
@@ -1002,6 +1013,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_serial": "",
                         "__meta_netbox_site_name": "Test Site",
                         "__meta_netbox_status": "active",
+                        "__meta_netbox_fqdn": "device-1.example.com",
                     },
                 }
             ],
@@ -1023,6 +1035,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_primary_ip": "2001:db8::3",
                         "__meta_netbox_primary_ip4": "192.0.2.3",
                         "__meta_netbox_primary_ip6": "2001:db8::3",
+                        "__meta_netbox_fqdn": "vm-1.example.com",
                     },
                 },
                 {
@@ -1037,6 +1050,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_primary_ip": "",
                         "__meta_netbox_primary_ip4": "",
                         "__meta_netbox_primary_ip6": "",
+                        "__meta_netbox_fqdn": "",
                     },
                 },
             ],
@@ -1057,6 +1071,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_primary_ip": "",
                         "__meta_netbox_primary_ip4": "",
                         "__meta_netbox_primary_ip6": "",
+                        "__meta_netbox_fqdn": "",
                     },
                 }
             ],
@@ -1100,6 +1115,7 @@ def test_prom_sd(
                     "platform__slug": None,
                     "primary_ip__address": "2001:db8::1/128",
                     "tags": ["test-device-tag"],
+                    "cf__fqdn": "device-1.example.com",
                 },
             ],
         ),
@@ -1112,6 +1128,7 @@ def test_prom_sd(
                     "platform__slug": None,
                     "primary_ip__address": "2001:db8::3/128",
                     "tags": ["test-tag"],
+                    "cf__fqdn": "vm-1.example.com",
                 },
                 {
                     "name": "Test Device 1",
@@ -1119,6 +1136,7 @@ def test_prom_sd(
                     "platform__slug": None,
                     "primary_ip__address": "2001:db8::1/128",
                     "tags": ["test-device-tag"],
+                    "cf__fqdn": "device-1.example.com",
                 },
             ],
         ),
@@ -1131,6 +1149,7 @@ def test_prom_sd(
                     "platform__slug": None,
                     "primary_ip__address": None,
                     "tags": [],
+                    "cf__fqdn": None,
                 },
                 {
                     "name": "Test-Device-2",
@@ -1138,6 +1157,7 @@ def test_prom_sd(
                     "platform__slug": None,
                     "primary_ip__address": None,
                     "tags": ["test-tag"],
+                    "cf__fqdn": None,
                 },
                 {
                     "name": "Test-Device-3",
@@ -1145,6 +1165,7 @@ def test_prom_sd(
                     "platform__slug": None,
                     "primary_ip__address": "2001:db8::dead:beef:1/64",
                     "tags": [],
+                    "cf__fqdn": None,
                 },
             ],
         ),
@@ -1157,6 +1178,7 @@ def test_prom_sd(
                     "platform__slug": None,
                     "primary_ip__address": "2001:db8::3/128",
                     "tags": ["test-tag"],
+                    "cf__fqdn": "vm-1.example.com",
                 },
                 {
                     "name": "VM2",
@@ -1164,6 +1186,7 @@ def test_prom_sd(
                     "platform__slug": None,
                     "primary_ip__address": None,
                     "tags": [],
+                    "cf__fqdn": None,
                 },
                 {
                     "name": "Test Device 1",
@@ -1171,6 +1194,7 @@ def test_prom_sd(
                     "platform__slug": None,
                     "primary_ip__address": "2001:db8::1/128",
                     "tags": ["test-device-tag"],
+                    "cf__fqdn": "device-1.example.com",
                 },
                 {
                     "name": "Test-Device-2",
@@ -1178,6 +1202,7 @@ def test_prom_sd(
                     "platform__slug": None,
                     "primary_ip__address": None,
                     "tags": ["test-tag"],
+                    "cf__fqdn": None,
                 },
                 {
                     "name": "Test-Device-3",
@@ -1185,6 +1210,7 @@ def test_prom_sd(
                     "platform__slug": None,
                     "primary_ip__address": "2001:db8::dead:beef:1/64",
                     "tags": [],
+                    "cf__fqdn": None,
                 },
             ],
         ),
@@ -1197,6 +1223,7 @@ def test_prom_sd(
                     "platform__slug": None,
                     "primary_ip__address": None,
                     "tags": [],
+                    "cf__fqdn": None,
                 }
             ],
         ),
