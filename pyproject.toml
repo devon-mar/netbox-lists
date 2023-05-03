@@ -42,7 +42,6 @@ module = [
     "taggit.*",
     "django_filters",
     "netaddr.*",
-    "drf_yasg.*",
     # NetBox
     "dcim.*",
     "ipam.*",

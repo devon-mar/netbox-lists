@@ -1275,8 +1275,11 @@ def test_tags_404(nb_api: pynetbox.api, nb_requests: requests.Session):
     assert resp.status_code == 404
 
 
-def test_openapi(nb_api: pynetbox.api):
+def test_openapi(nb_api: pynetbox.api, nb_requests: requests.Session):
     try:
-        nb_api.openapi()
+        # nb_api.openapi()
+
+        resp = nb_requests.get("http://localhost:8000/api/schema/")
+        assert resp.ok
     except Exception as e:
         pytest.fail(f"Unexpected exception: {repr(e)}")

@@ -1,11 +1,10 @@
-from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
     AggregateListViewSet,
     DevicesListViewSet,
-    DevicesVMsAttrsListView,
-    DevicesVMsListView,
+    DevicesVMsAttrsListViewSet,
+    DevicesVMsListViewSet,
     IPAddressListViewSet,
     IPRangeListViewSet,
     ListsRootView,
@@ -35,8 +34,6 @@ router.register(
 router.register("prometheus-devices", PrometheusDeviceSD)
 router.register("prometheus-vms", PrometheusVirtualMachineSD)
 
-urlpatterns = [
-    path("devices-vms/", DevicesVMsListView.as_view()),
-    path("devices-vms-attrs/", DevicesVMsAttrsListView.as_view()),
-]
-urlpatterns += router.urls
+router.register("devices-vms", DevicesVMsListViewSet)
+router.register("devices-vms-attrs", DevicesVMsAttrsListViewSet)
+urlpatterns = router.urls

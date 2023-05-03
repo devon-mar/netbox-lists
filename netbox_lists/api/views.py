@@ -1,15 +1,20 @@
 import itertools
 import operator
 from functools import reduce
-from typing import Any, Dict, Iterable, List, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 
-import netaddr
 from dcim.filtersets import DeviceFilterSet
 from dcim.models import Device
 from django.conf import settings
 from django.db.models import Q
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    OpenApiExample,
+    OpenApiParameter,
+    OpenApiResponse,
+)
 from extras.models import Tag
 from ipam.filtersets import (
     AggregateFilterSet,
@@ -26,7 +31,6 @@ from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.routers import APIRootView
-from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 from virtualization.filtersets import VirtualMachineFilterSet
 from virtualization.models import VirtualMachine
@@ -49,28 +53,77 @@ from .utils import (
     set_prefixlen_max,
 )
 
-FAMILY_PARAM = openapi.Parameter(
-    FAMILY_PARAM_NAME,
-    in_=openapi.IN_QUERY,
-    description="Filter IPs and or prefixes by address family (4|6).",
-    type=openapi.TYPE_INTEGER,
-    enum=[4, 6],
+FAMILY_PARAM = OpenApiParameter(
+    name=FAMILY_PARAM_NAME,
+    location="query",
+    description="Filter IPs and or prefixes by address family.",
+    type=int,
+    enum=(4, 6),
 )
-AS_CIDR_PARAM = openapi.Parameter(
-    AS_CIDR_PARAM_NAME,
-    in_=openapi.IN_QUERY,
+AS_CIDR_PARAM = OpenApiParameter(
+    name=AS_CIDR_PARAM_NAME,
+    location="query",
     description="Return IPs as /32 or /128",
-    type=openapi.TYPE_BOOLEAN,
+    default=settings.PLUGINS_CONFIG["netbox_lists"]["as_cidr"],
+    type=bool,
 )
-SUMMARIZE_PARAM = openapi.Parameter(
-    SUMMARIZE_PARAM_NAME,
-    in_=openapi.IN_QUERY,
-    description="Summarize the IPs/Prefixes before returning them.",
-    type=openapi.TYPE_BOOLEAN,
+SUMMARIZE_PARAM = OpenApiParameter(
+    name=SUMMARIZE_PARAM_NAME,
+    location="query",
+    description="Summarize the IPs/prefixes before returning them.",
+    type=bool,
+    default=settings.PLUGINS_CONFIG["netbox_lists"]["summarize"],
 )
-IP_PREFIX_RESPONSES = {
-    200: openapi.Schema(type="array", items=openapi.Schema(type="string"))
-}
+
+PROMETHEUS_RESPONSE_SCHEMA = OpenApiResponse(
+    response={
+        "type": "object",
+        "properties": {
+            "targets": {
+                "type": "array",
+                "items": {"type": "string", "description": "Primary IP or name"},
+            },
+            "labels": {"type": "object", "additionalProperties": {"type": "string"}},
+        },
+    },
+    examples=[
+        OpenApiExample(
+            "Device",
+            value={
+                "targets": ["2001:db8::1"],
+                "labels": {
+                    "__meta_netbox_id": "1",
+                    "__meta_netbox_name": "dmi01-akron-rtr01",
+                    "__meta_netbox_status": "active",
+                    "__meta_netbox_site_name": "DM-Akron",
+                    "__meta_netbox_platform_name": "Cisco IOS",
+                    "__meta_netbox_primary_ip": "2001:db8::1",
+                    "__meta_netbox_primary_ip4": "",
+                    "__meta_netbox_primary_ip6": "2001:db8::1",
+                    "__meta_netbox_serial": "",
+                },
+            },
+        ),
+        OpenApiExample(
+            "VM",
+            value={
+                "targets": ["192.0.2.100"],
+                "labels": {
+                    "__meta_netbox_id": "361",
+                    "__meta_netbox_name": "vm1",
+                    "__meta_netbox_status": "active",
+                    "__meta_netbox_cluster_name": "DO-AMS3",
+                    "__meta_netbox_site_name": "",
+                    "__meta_netbox_role_name": "Application Server",
+                    "__meta_netbox_platform_name": "Ubuntu Linux 20.04",
+                    "__meta_netbox_primary_ip": "192.0.2.100",
+                    "__meta_netbox_primary_ip4": "192.0.2.100",
+                    "__meta_netbox_primary_ip6": "",
+                },
+            },
+        ),
+    ],
+)
 
 OTHER_PARAMS = {
     FAMILY_PARAM_NAME,
@@ -78,6 +131,21 @@ OTHER_PARAMS = {
     SUMMARIZE_PARAM_NAME,
     # for BrowsableAPIRenderer
     "format",
+}
+
+LISTS_RESPONSES = {
+    (200, "application/json"): OpenApiResponse(
+        description="JSON or plain text list of IP addresses/prefixes.",
+        response=str,
+        examples=[
+            OpenApiExample("JSON example", value=["192.0.2.0/24", "2001:db8::/64"]),
+        ],
+    ),
+    (200, "text/plain"): OpenApiResponse(
+        response=str,
+        # This description is not used in swagger.
+        examples=[OpenApiExample("Text example", value="192.0.2.0/24\n2001:db8::/64")],
+    ),
 }
 
 
@@ -102,9 +170,11 @@ class InvalidFilterCheckMixin:
         return qs
 
 
+# View set instead of APIView sknce it makes OpenApi filtersets work.
 class ListsBaseViewSet(GenericViewSet):
     renderer_classes = [JSONRenderer, BrowsableAPIRenderer, PlainTextRenderer]
     pagination_class = None
+    filter_backends = (DjangoFilterBackend,)  # disable ordering
 
     # Adapted from
     # https://github.com/netbox-community/netbox/blob/a33e47780b42f49f4ea536bace1617fa7dda31ab/
@@ -120,9 +190,7 @@ class ListsBaseViewSet(GenericViewSet):
 
 
 class ValuesListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
-    @swagger_auto_schema(
-        manual_parameters=[SUMMARIZE_PARAM], responses=IP_PREFIX_RESPONSES
-    )
+    @extend_schema(parameters=[SUMMARIZE_PARAM], responses=LISTS_RESPONSES)
     def list(self, request: Request, use_net_ip: bool = False) -> Response:
         queryset = self.filter_queryset(self.get_queryset())
         return make_ip_list_response(
@@ -130,11 +198,13 @@ class ValuesListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
         )
 
 
+@extend_schema_view(list=extend_schema(description="Get a list of prefixes."))
 class PrefixListViewSet(ValuesListViewSet):
     queryset = Prefix.objects.values_list("prefix", flat=True).distinct()
     filterset_class = CustomPrefixFilterSet
 
 
+@extend_schema_view(list=extend_schema(description="Get a list of aggregate prefixes."))
 class AggregateListViewSet(ValuesListViewSet):
     queryset = Aggregate.objects.values_list("prefix", flat=True).distinct()
     filterset_class = AggregateFilterSet
@@ -144,10 +214,12 @@ class IPAddressListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
     queryset = IPAddress.objects.values_list("address", flat=True).distinct()
     filterset_class = IPAddressFilterSet
 
-    @swagger_auto_schema(
-        manual_parameters=[AS_CIDR_PARAM], responses=IP_PREFIX_RESPONSES
+    @extend_schema(
+        description="Get a list of IP addresses.",
+        parameters=[AS_CIDR_PARAM, SUMMARIZE_PARAM],
+        responses=LISTS_RESPONSES,
     )
-    def list(self, request) -> Response:
+    def list(self, request: Request) -> Response:
         queryset = self.filter_queryset(self.get_queryset())
         return make_ip_list_response(
             (set_prefixlen_max(i) for i in queryset),
@@ -161,19 +233,21 @@ class ServiceListviewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
     filterset_class = ServiceFilterSet
     other_query_params = OTHER_PARAMS.union({"primary_ips"})
 
-    @swagger_auto_schema(
-        manual_parameters=[
+    @extend_schema(
+        description="Get a list of IPs associated with services.",
+        parameters=[
             FAMILY_PARAM,
             AS_CIDR_PARAM,
             SUMMARIZE_PARAM,
-            openapi.Parameter(
-                "primary_ips",
-                in_=openapi.IN_QUERY,
+            OpenApiParameter(
+                name="primary_ips",
+                location="query",
                 description="Return Primary IPs if the service doesn't have any assigned IPs.",
-                type=openapi.TYPE_BOOLEAN,
+                type=bool,
+                default=settings.PLUGINS_CONFIG["netbox_lists"]["service_primary_ips"],
             ),
         ],
-        responses=IP_PREFIX_RESPONSES,
+        responses=LISTS_RESPONSES,
     )
     def list(self, request: Request) -> Response:
         as_cidr = get_as_cidr_param(request)
@@ -193,10 +267,10 @@ class DevicesListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
     queryset = Device.objects.all()
     filterset_class = DeviceFilterSet
 
-    @swagger_auto_schema(
-        operation_description="Returns the primary IPs of devices.",
-        manual_parameters=[AS_CIDR_PARAM, FAMILY_PARAM, SUMMARIZE_PARAM],
-        responses=IP_PREFIX_RESPONSES,
+    @extend_schema(
+        description="Get the primary IPs of devices.",
+        parameters=[AS_CIDR_PARAM, FAMILY_PARAM, SUMMARIZE_PARAM],
+        responses=LISTS_RESPONSES,
     )
     def list(self, request: Request) -> Response:
         family = get_family_param(request)
@@ -217,10 +291,10 @@ class VirtualMachinesListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
     queryset = VirtualMachine.objects.all()
     filterset_class = VirtualMachineFilterSet
 
-    @swagger_auto_schema(
-        operation_description="Returns the primary IPs of virtual machines.",
-        manual_parameters=[AS_CIDR_PARAM, FAMILY_PARAM],
-        responses=IP_PREFIX_RESPONSES,
+    @extend_schema(
+        description="Get the primary IPs of virtual machines.",
+        parameters=[AS_CIDR_PARAM, FAMILY_PARAM, SUMMARIZE_PARAM],
+        responses=LISTS_RESPONSES,
     )
     def list(self, request: Request) -> Response:
         family = get_family_param(request)
@@ -237,7 +311,7 @@ class VirtualMachinesListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
         )
 
 
-class DevicesVMsListView(APIView):
+class DevicesVMsListViewSet(ListsBaseViewSet):
     renderer_classes = [JSONRenderer, BrowsableAPIRenderer, PlainTextRenderer]
     # We need to have `queryset defined`. Otherwise, the following occurs:
     # Cannot apply TokenPermissions on a view that does not set `.queryset` or have a `.get_queryset()` method.
@@ -246,6 +320,7 @@ class DevicesVMsListView(APIView):
     #
     # Therefore, we use Device as the model.
     queryset = Device.objects.all()
+    filterset_class = DeviceFilterSet
 
     def validate_filters(self):
         valid_filters = OTHER_PARAMS.union(
@@ -258,13 +333,13 @@ class DevicesVMsListView(APIView):
         if len(invalid_filters) > 0:
             raise ValidationError({k: "Invalid filter." for k in invalid_filters})
 
-    @swagger_auto_schema(
-        operation_description="Combined devices and virtual machines primary IPs list. "
-        "Use only parameters common to both devices and VMs.",
-        manual_parameters=[SUMMARIZE_PARAM],
-        responses=IP_PREFIX_RESPONSES,
+    @extend_schema(
+        description="Combined devices and virtual machines primary IPs list. "
+        "Use only filters common to both devices and VMs.",
+        parameters=[AS_CIDR_PARAM, FAMILY_PARAM, SUMMARIZE_PARAM],
+        responses=LISTS_RESPONSES,
     )
-    def get(self, request: Request) -> Response:
+    def list(self, request: Request) -> Response:
         self.validate_filters()
 
         family = get_family_param(request)
@@ -294,10 +369,10 @@ class IPRangeListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
     queryset = IPRange.objects.all()
     filterset_class = IPRangeFilterSet
 
-    @swagger_auto_schema(
-        operation_description="Returns a list of CIDRs for each range.",
-        manual_parameters=[SUMMARIZE_PARAM],
-        responses=IP_PREFIX_RESPONSES,
+    @extend_schema(
+        description="Get a list of CIDRs for each range.",
+        parameters=[SUMMARIZE_PARAM],
+        responses=LISTS_RESPONSES,
     )
     def list(self, request: Request) -> Response:
         queryset = self.filter_queryset(self.get_queryset())
@@ -369,7 +444,7 @@ class TagsListViewSet(ListsBaseViewSet):
 
     def get_ips(
         self, tag: Tag, family: Union[int, None], request: Request
-    ) -> Iterable[netaddr.IPNetwork]:
+    ) -> Iterable[IPNetwork]:
         if family == 4:
             family_filter = Q(address__family=4)
         elif family == 6:
@@ -453,80 +528,92 @@ class TagsListViewSet(ListsBaseViewSet):
         if len(invalid_params) > 0:
             raise ValidationError({k: "Invalid filter." for k in invalid_params})
 
-    @swagger_auto_schema(
-        manual_parameters=[
+    @extend_schema(
+        description="Get a list of IPs/prefixes associated with the tag.",
+        parameters=[
             SUMMARIZE_PARAM,
             FAMILY_PARAM,
-            openapi.Parameter(
-                "prefixes",
-                in_=openapi.IN_QUERY,
-                description="Include prefixes",
-                type=openapi.TYPE_BOOLEAN,
+            OpenApiParameter(
+                name="prefixes",
+                location="query",
+                description="Include prefixes.",
+                type=bool,
+                default=False,
             ),
-            openapi.Parameter(
-                "aggregates",
-                in_=openapi.IN_QUERY,
-                description="Include aggregates",
-                type=openapi.TYPE_BOOLEAN,
+            OpenApiParameter(
+                name="aggregates",
+                location="query",
+                description="Include aggregates.",
+                type=bool,
+                default=False,
             ),
-            openapi.Parameter(
-                "services",
-                in_=openapi.IN_QUERY,
-                description="Include services",
-                type=openapi.TYPE_BOOLEAN,
+            OpenApiParameter(
+                name="services",
+                location="query",
+                description="Include services.",
+                type=bool,
+                default=False,
             ),
-            openapi.Parameter(
-                "devices",
-                in_=openapi.IN_QUERY,
-                description="Include devices",
-                type=openapi.TYPE_BOOLEAN,
+            OpenApiParameter(
+                name="devices",
+                location="query",
+                description="Include devices. Mutually exclusive with `devices_primary`.",
+                type=bool,
+                default=False,
             ),
-            openapi.Parameter(
-                "vms",
-                in_=openapi.IN_QUERY,
-                description="Include vms",
-                type=openapi.TYPE_BOOLEAN,
+            OpenApiParameter(
+                name="vms",
+                location="query",
+                description="Include VMs. Mutually exclusive with `vms_primary`.",
+                type=bool,
+                default=False,
             ),
-            openapi.Parameter(
-                "devices_primary",
-                in_=openapi.IN_QUERY,
-                description="Include devices (primary IPs only)",
-                type=openapi.TYPE_BOOLEAN,
+            OpenApiParameter(
+                name="devices_primary",
+                location="query",
+                description="Include devices (primary IPs only). Mutually exclusive with `devices`.",
+                type=bool,
+                default=False,
             ),
-            openapi.Parameter(
-                "vms_primary",
-                in_=openapi.IN_QUERY,
-                description="Include vms (primary IPs only)",
-                type=openapi.TYPE_BOOLEAN,
+            OpenApiParameter(
+                name="vms_primary",
+                location="query",
+                description="Include VMs (primary IPs only). Mutually exclusive with `vms`.",
+                type=bool,
+                default=False,
             ),
-            openapi.Parameter(
-                "ips",
-                in_=openapi.IN_QUERY,
-                description="Include IP Addresses",
-                type=openapi.TYPE_BOOLEAN,
+            OpenApiParameter(
+                name="ips",
+                location="query",
+                description="Include IP Addresses.",
+                type=bool,
+                default=False,
             ),
-            openapi.Parameter(
-                "service_primary_ips",
-                in_=openapi.IN_QUERY,
-                description="Return Primary IPs if the service doesn't have any assigned IPs.",
-                type=openapi.TYPE_BOOLEAN,
+            OpenApiParameter(
+                name="service_primary_ips",
+                location="query",
+                description="Return primary IPs if the service doesn't have any assigned IPs. Only used if `services=True`.",
+                type=bool,
+                default=settings.PLUGINS_CONFIG["netbox_lists"]["service_primary_ips"],
             ),
-            openapi.Parameter(
-                "all",
-                in_=openapi.IN_QUERY,
-                description="Include ALL of the above options except *_primary.",
-                type=openapi.TYPE_BOOLEAN,
+            OpenApiParameter(
+                name="all",
+                location="query",
+                description="Include **all** options except *_primary.",
+                type=bool,
+                default=False,
             ),
-            openapi.Parameter(
-                "all_primary",
-                in_=openapi.IN_QUERY,
-                description="Include ALL of the above options, using Device/VM primary IPs.",
-                type=openapi.TYPE_BOOLEAN,
+            OpenApiParameter(
+                name="all_primary",
+                location="query",
+                description="Include **all** options, using device/VM primary IPs.",
+                type=bool,
+                default=False,
             ),
         ],
-        responses=IP_PREFIX_RESPONSES,
+        responses=LISTS_RESPONSES,
     )
-    def retrieve(self, request, slug=None) -> Response:
+    def retrieve(self, request: Request, slug: Optional[str] = None) -> Response:
         if not slug:
             return Response("No slug", status.HTTP_400_BAD_REQUEST)
 
@@ -566,9 +653,11 @@ class PrometheusVirtualMachineSD(
     serializer_class = PrometheusVMSerializer
 
 
-class DevicesVMsAttrsListView(APIView):
+class DevicesVMsAttrsListViewSet(ListsBaseViewSet):
     renderer_classes = [JSONRenderer, BrowsableAPIRenderer]
-    queryset = Device.objects.all()
+    filterset_class = DeviceFilterSet
+    filter_backends = (DjangoFilterBackend,)
+    queryset = Device.objects.filter()
 
     def _to_dict(
         self,
@@ -591,13 +680,35 @@ class DevicesVMsAttrsListView(APIView):
         if len(invalid_filters) > 0:
             raise ValidationError({k: "Invalid filter." for k in invalid_filters})
 
-    def get(self, request: Request) -> Response:
+    @extend_schema(
+        description="Get a list of device and VM objects. "
+        "Use only filters common to both devices and VMs.",
+        responses={
+            200: OpenApiResponse(
+                response={
+                    "type": "array",
+                    "items": {"type": "object", "additionalProperties": True},
+                },
+                examples=[
+                    OpenApiExample(
+                        "Example 1",
+                        value={
+                            "id": 1,
+                            "name": "dmi01-akron-rtr01",
+                            "role__slug": "router",
+                            "platform__slug": "cisco-ios",
+                            "primary_ip__address": "2001:db8::1/64",
+                            "tags": [],
+                        },
+                    )
+                ],
+            )
+        },
+    )
+    def list(self, request: Request) -> Response:
         self.validate_filters()
 
         attrs = settings.PLUGINS_CONFIG["netbox_lists"]["devices_vms_attrs"]
-
-        # TODO remove in next major release
-        attrs = [a.split("__") if isinstance(a, str) else a for a in attrs]
 
         device_attrs: List[Iterable[str]] = []
         for a in attrs:
