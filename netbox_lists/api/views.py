@@ -38,7 +38,7 @@ from virtualization.models import VirtualMachine
 from .constants import AS_CIDR_PARAM_NAME, FAMILY_PARAM_NAME, SUMMARIZE_PARAM_NAME
 from .filtersets import CustomPrefixFilterSet
 from .renderers import PlainTextRenderer
-from .serializers import PrometheusDeviceSerializer, PrometheusVMSerializer
+from .serializers import PrometheusDeviceSerializer, PrometheusIPAddressSerializer, PrometheusVMSerializer
 from .utils import (
     device_vm_primary_list,
     filter_queryset,
@@ -652,6 +652,14 @@ class PrometheusVirtualMachineSD(
     queryset = VirtualMachine.objects.filter()
     filterset_class = VirtualMachineFilterSet
     serializer_class = PrometheusVMSerializer
+
+
+class PrometheusIPAddressSD(
+    InvalidFilterCheckMixin, mixins.ListModelMixin, ListsBaseViewSet
+):
+    queryset = IPAddress.objects.filter()
+    filterset_class = IPAddressFilterSet
+    serializer_class = PrometheusIPAddressSerializer
 
 
 class DevicesVMsAttrsListViewSet(ListsBaseViewSet):
