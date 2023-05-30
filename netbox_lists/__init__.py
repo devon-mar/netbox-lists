@@ -58,9 +58,7 @@ class ListsPluginConfig(PluginConfig):
             "__meta_netbox_primary_ip6": ("primary_ip6", "address", "ip"),
             "__meta_netbox_serial": ("serial",),
         },
-        "prometheus_ipaddress_sd_target": (
-            ("address", "ip"),
-        ),
+        "prometheus_ipaddress_sd_target": (("address", "ip"),),
         "prometheus_ipaddress_sd_labels": {
             "__meta_netbox_id": ("id",),
             "__meta_netbox_role": ("role",),

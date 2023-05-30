@@ -1158,7 +1158,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                 },
             ],
         ),
-        # Test a filter 	 	
+        # Test a filter
         (
             "http://localhost:8000/api/plugins/lists/prometheus-ip-addresses/?device=Test-Device-2",
             [
@@ -1177,7 +1177,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_status": "active",
                         "__meta_netbox_dns_name": "",
                     },
-                }
+                },
             ],
         ),
     ],

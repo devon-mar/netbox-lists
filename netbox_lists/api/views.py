@@ -38,7 +38,11 @@ from virtualization.models import VirtualMachine
 from .constants import AS_CIDR_PARAM_NAME, FAMILY_PARAM_NAME, SUMMARIZE_PARAM_NAME
 from .filtersets import CustomPrefixFilterSet
 from .renderers import PlainTextRenderer
-from .serializers import PrometheusDeviceSerializer, PrometheusIPAddressSerializer, PrometheusVMSerializer
+from .serializers import (
+    PrometheusDeviceSerializer,
+    PrometheusIPAddressSerializer,
+    PrometheusVMSerializer,
+)
 from .utils import (
     device_vm_primary_list,
     filter_queryset,
