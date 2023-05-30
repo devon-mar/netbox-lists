@@ -103,6 +103,8 @@ def nb_api():
     test_device_1_intf_1_ip_1 = nb_create(
         api.ipam.ip_addresses,
         address="192.0.2.1/24",
+        role="secondary",
+        dns_name="device-1.example.com",
         assigned_object_type="dcim.interface",
         assigned_object_id=test_device_1_intf_1.id,
     )
@@ -1072,6 +1074,108 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_primary_ip4": "",
                         "__meta_netbox_primary_ip6": "",
                         "__meta_netbox_fqdn": "",
+                    },
+                }
+            ],
+        ),
+        #
+        # IP Addresses SD
+        #
+        (
+            "http://localhost:8000/api/plugins/lists/prometheus-ip-addresses/",
+            [
+                {
+                    "targets": ["192.0.2.1"],
+                    "labels": {
+                        "__meta_netbox_role": "secondary",
+                        "__meta_netbox_status": "active",
+                        "__meta_netbox_dns_name": "device-1.example.com",
+                    },
+                },
+                {
+                    "targets": ["2001:db8::1"],
+                    "labels": {
+                        "__meta_netbox_role": "",
+                        "__meta_netbox_status": "active",
+                        "__meta_netbox_dns_name": "",
+                    },
+                },
+                {
+                    "targets": ["192.0.2.2"],
+                    "labels": {
+                        "__meta_netbox_role": "",
+                        "__meta_netbox_status": "active",
+                        "__meta_netbox_dns_name": "",
+                    },
+                },
+                {
+                    "targets": ["2001:db8::1"],
+                    "labels": {
+                        "__meta_netbox_role": "",
+                        "__meta_netbox_status": "active",
+                        "__meta_netbox_dns_name": "",
+                    },
+                },
+                {
+                    "targets": ["192.0.2.5"],
+                    "labels": {
+                        "__meta_netbox_role": "",
+                        "__meta_netbox_status": "active",
+                        "__meta_netbox_dns_name": "",
+                    },
+                },
+                {
+                    "targets": ["2001:db8::dead:beef:1"],
+                    "labels": {
+                        "__meta_netbox_role": "",
+                        "__meta_netbox_status": "active",
+                        "__meta_netbox_dns_name": "",
+                    },
+                },
+                {
+                    "targets": ["192.0.2.3"],
+                    "labels": {
+                        "__meta_netbox_role": "",
+                        "__meta_netbox_status": "active",
+                        "__meta_netbox_dns_name": "",
+                    },
+                },
+                {
+                    "targets": ["2001:db8::3"],
+                    "labels": {
+                        "__meta_netbox_role": "",
+                        "__meta_netbox_status": "active",
+                        "__meta_netbox_dns_name": "",
+                    },
+                },
+                {
+                    "targets": ["192.0.2.4"],
+                    "labels": {
+                        "__meta_netbox_role": "",
+                        "__meta_netbox_status": "active",
+                        "__meta_netbox_dns_name": "",
+                    },
+                },
+            ],
+        ),
+        # Test a filter 	 	
+        (
+            "http://localhost:8000/api/plugins/lists/prometheus-ip-addresses/?device=Test-Device-2",
+            [
+                {
+                    "targets": ["192.0.2.2"],
+                    "labels": {
+                        "__meta_netbox_role": "",
+                        "__meta_netbox_status": "active",
+                        "__meta_netbox_dns_name": "",
+                    },
+                },
+                {
+                    "targets": ["2001:db8::1"],
+                    "labels": {
+                        "__meta_netbox_role": "",
+                        "__meta_netbox_status": "active",
+                        "__meta_netbox_dns_name": "",
                     },
                 }
             ],

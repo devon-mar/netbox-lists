@@ -37,5 +37,12 @@ PLUGINS_CONFIG = {
             # A custom field. Will be an empty string if None.
             "__meta_netbox_fqdn": ("cf", "fqdn"),
         },
+        "prometheus_ipaddres_sd_labels": {
+            "__meta_netbox_id": ("id",),
+            "__meta_netbox_role": ("role",),
+            "__meta_netbox_status": ("status",),
+            "__meta_netbox_dns_name": ("dns_name",),
+            "__meta_netbox_assigned": ("assigned_object", "name"),
+        },
     }
 }
