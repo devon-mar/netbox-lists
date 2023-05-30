@@ -1090,6 +1090,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_role": "secondary",
                         "__meta_netbox_status": "active",
                         "__meta_netbox_dns_name": "device-1.example.com",
+                        "__meta_netbox_assigned": "GigabitEthernet1/1",
                     },
                 },
                 {
@@ -1098,6 +1099,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_role": "",
                         "__meta_netbox_status": "active",
                         "__meta_netbox_dns_name": "",
+                        "__meta_netbox_assigned": "GigabitEthernet1/1",
                     },
                 },
                 {
@@ -1106,6 +1108,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_role": "",
                         "__meta_netbox_status": "active",
                         "__meta_netbox_dns_name": "",
+                        "__meta_netbox_assigned": "GigabitEthernet1/1",
                     },
                 },
                 {
@@ -1114,6 +1117,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_role": "",
                         "__meta_netbox_status": "active",
                         "__meta_netbox_dns_name": "",
+                        "__meta_netbox_assigned": "GigabitEthernet1/1",
                     },
                 },
                 {
@@ -1122,6 +1126,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_role": "",
                         "__meta_netbox_status": "active",
                         "__meta_netbox_dns_name": "",
+                        "__meta_netbox_assigned": "GigabitEthernet1/1",
                     },
                 },
                 {
@@ -1130,6 +1135,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_role": "",
                         "__meta_netbox_status": "active",
                         "__meta_netbox_dns_name": "",
+                        "__meta_netbox_assigned": "GigabitEthernet1/1",
                     },
                 },
                 {
@@ -1138,6 +1144,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_role": "",
                         "__meta_netbox_status": "active",
                         "__meta_netbox_dns_name": "",
+                        "__meta_netbox_assigned": "eth0",
                     },
                 },
                 {
@@ -1146,6 +1153,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_role": "",
                         "__meta_netbox_status": "active",
                         "__meta_netbox_dns_name": "",
+                        "__meta_netbox_assigned": "eth0",
                     },
                 },
                 {
@@ -1154,6 +1162,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_role": "",
                         "__meta_netbox_status": "active",
                         "__meta_netbox_dns_name": "",
+                        "__meta_netbox_assigned": "eth1",
                     },
                 },
             ],
@@ -1168,6 +1177,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_role": "",
                         "__meta_netbox_status": "active",
                         "__meta_netbox_dns_name": "",
+                        "__meta_netbox_assigned": "GigabitEthernet1/1",
                     },
                 },
                 {
@@ -1176,6 +1186,7 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                         "__meta_netbox_role": "",
                         "__meta_netbox_status": "active",
                         "__meta_netbox_dns_name": "",
+                        "__meta_netbox_assigned": "GigabitEthernet1/1",
                     },
                 },
             ],
