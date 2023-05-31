@@ -27,12 +27,11 @@ class BasePrometheusSerializer(serializers.Serializer, Generic[T]):
             ],
             ((self.default_target_attr,),),
         ):
-            print(f"Attr: {repr(attrs)}")
             target = get_attr(attrs, device)
             if target is not None:
                 return [str(target)]
 
-        # This shouldn't happen since Name is a required field
+        # This shouldn't happen since default_target_attr should be a required field
         raise AbortRequest(
             f"No target found for {repr(device)}. (this shouldn't happen)"
         )
