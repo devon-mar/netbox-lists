@@ -3,6 +3,8 @@ name = "netbox-lists"
 version = "3.0.0"
 description = ""
 authors = ["Devon Mar <devonm@mdmm.ca>"]
+license = "Apache-2.0"
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.6.2"
