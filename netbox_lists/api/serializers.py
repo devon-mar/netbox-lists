@@ -3,6 +3,7 @@ from typing import Dict, Generic, List, TypeVar
 
 from dcim.models import Device
 from django.conf import settings
+from ipam.models import IPAddress
 from rest_framework import serializers
 from utilities.exceptions import AbortRequest
 from virtualization.models import VirtualMachine
@@ -16,13 +17,15 @@ class BasePrometheusSerializer(serializers.Serializer, Generic[T]):
     targets = serializers.SerializerMethodField()
     labels = serializers.SerializerMethodField()
 
+    default_target_attr = "name"
+
     def get_targets(self, device: T) -> List[str]:
-        # Default to Name
+        # Default to default_target_attr
         for attrs in chain(
             settings.PLUGINS_CONFIG["netbox_lists"][
                 f"prometheus_{self.settings_type}_sd_target"
             ],
-            (("name",),),
+            ((self.default_target_attr,),),
         ):
             print(f"Attr: {repr(attrs)}")
             target = get_attr(attrs, device)
@@ -51,3 +54,8 @@ class PrometheusVMSerializer(BasePrometheusSerializer[VirtualMachine]):
 
 class PrometheusDeviceSerializer(BasePrometheusSerializer[Device]):
     settings_type = "device"
+
+
+class PrometheusIPAddressSerializer(BasePrometheusSerializer[IPAddress]):
+    settings_type = "ipaddress"
+    default_target_attr = "address"

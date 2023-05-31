@@ -8,7 +8,7 @@ Lists are returned as JSON arrays or as plain text. This means that firewalls
 can use NetBox as a source for dynamic address lists, such as Palo Alto's External Dynamic Lists, Fortinet's External Block List (Threat Feed) or
 pfSesnse/OPNSense's firewall aliases.
 
-This plugin also features endpoints for devices/VMs compatible with Prometheus' http_sd.
+This plugin also features endpoints for devices/VMs/IP addresses compatible with Prometheus' http_sd.
 
 This plugin supports NetBox v3.0, v3.1, v3.2, v3.3, and v3.4.
 
@@ -121,6 +121,22 @@ PLUGINS_CONFIG = {
             "__meta_netbox_serial": ("serial",),
             # A custom field. Will be an empty string if None.
             # "__meta_netbox_fqdn": ("cf", "fqdn"),
+        },
+        # Tuple/list of attributes to use for Prometheus IP address SD target. Defaults are shown.
+        #
+        # If all attributes return None, the address in CIDR format will be used.
+        "prometheus_ipaddress_sd_target": (
+            ("address", "ip"),
+        ),
+        # Dictionary of label to IP address attribute for Prometheus ip address SD. Defaults are shown.
+        "prometheus_ipaddress_sd_labels": {
+            "__meta_netbox_id": ("id",),
+            "__meta_netbox_role": ("role",),
+            "__meta_netbox_dns_name": ("dns_name",),
+            "__meta_netbox_status": ("status",),
+            # For addresses assigned to interfaces
+            #"__meta_netbox_device": ("assigned_object", "device", "name"),
+            #"__meta_netbox_interface": ("assigned_object", "name"),
         },
     }
 }
