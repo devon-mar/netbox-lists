@@ -57,7 +57,7 @@ PLUGINS_CONFIG = {
         # For services without any explicit IPs configured,
         # use the primary IPs of the associated device/vm.
         # Default: True
-        "service_primary_ips": True
+        "service_primary_ips": True,
         # Summarize responses
         "summarize": True,
         # A list of attributes for the devices-vms-attrs endpoint
