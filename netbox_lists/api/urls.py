@@ -10,8 +10,8 @@ from .views import (
     ListsRootView,
     PrefixListViewSet,
     PrometheusDeviceSD,
-    PrometheusVirtualMachineSD,
     PrometheusIPAddressSD,
+    PrometheusVirtualMachineSD,
     ServiceListviewSet,
     TagsListViewSet,
     VirtualMachinesListViewSet,
@@ -23,7 +23,7 @@ router = DefaultRouter()
 router.APIRootView = ListsRootView
 
 router.register("prefixes", PrefixListViewSet)
-router.register("ip-addresses", IPAddressListViewSet)
+router.register("ip-addresses", IPAddressListViewSet, basename="ip-addresses")
 router.register("ip-ranges", IPRangeListViewSet)
 router.register("aggregates", AggregateListViewSet)
 router.register("services", ServiceListviewSet)
@@ -32,10 +32,10 @@ router.register("devices", DevicesListViewSet, basename="devices")
 router.register(
     "virtual-machines", VirtualMachinesListViewSet, basename="virtual-machines"
 )
-router.register("prometheus-devices", PrometheusDeviceSD)
+router.register("prometheus-devices", PrometheusDeviceSD, basename="prometheus-devices")
 router.register("prometheus-vms", PrometheusVirtualMachineSD)
 router.register("prometheus-ip-addresses", PrometheusIPAddressSD)
 
-router.register("devices-vms", DevicesVMsListViewSet)
+router.register("devices-vms", DevicesVMsListViewSet, basename="devices-vms")
 router.register("devices-vms-attrs", DevicesVMsAttrsListViewSet)
 urlpatterns = router.urls
