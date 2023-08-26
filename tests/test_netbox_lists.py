@@ -1417,11 +1417,23 @@ def test_tags_404(nb_api: pynetbox.api, nb_requests: requests.Session):
     assert resp.status_code == 404
 
 
-def test_openapi(nb_api: pynetbox.api, nb_requests: requests.Session):
-    try:
-        # nb_api.openapi()
+def test_openapi(nb_requests: requests.Session):
+    # nb_api.openapi()
 
-        resp = nb_requests.get("http://localhost:8000/api/schema/")
-        assert resp.ok
-    except Exception as e:
-        pytest.fail(f"Unexpected exception: {repr(e)}")
+    resp = nb_requests.get("http://localhost:8000/api/schema/")
+    assert resp.ok
+
+
+def test_lists_api_root_urls_unique(nb_requests: requests.Session):
+    resp = nb_requests.get("http://localhost:8000/api/plugins/lists/")
+    assert resp.ok
+
+    d = resp.json()
+    assert isinstance(d, dict)
+
+    unique_d = {}
+    for k, v in d.items():
+        if v not in unique_d.values():
+            unique_d[k] = v
+
+    assert unique_d == d
