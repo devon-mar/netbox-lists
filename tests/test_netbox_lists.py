@@ -56,6 +56,10 @@ def nb_api():
         "http://localhost:8000", token="0123456789abcdef0123456789abcdef01234567"
     )
 
+    version = api.version
+    # We only support NetBox 3.5 and 3.6.
+    device_role_key = "device_role" if version == "3.5" else "role"
+
     nb_create(
         api.extras.custom_fields,
         name="fqdn",
@@ -89,10 +93,10 @@ def nb_api():
         api.dcim.devices,
         name="Test Device 1",
         device_type=test_device_type.id,
-        device_role=test_device_role.id,
         site=test_site.id,
         tags=[test_device_tag.id],
         custom_fields={"fqdn": "device-1.example.com"},
+        **{device_role_key: test_device_role.id},
     )
     test_device_1_intf_1 = nb_create(
         api.dcim.interfaces,
@@ -127,9 +131,9 @@ def nb_api():
         api.dcim.devices,
         name="Test-Device-2",
         device_type=test_device_type.id,
-        device_role=test_device_role_2.id,
         site=test_site.id,
         tags=[test_tag.id],
+        **{device_role_key: test_device_role_2.id},
     )
     test_device_2_intf_1 = nb_create(
         api.dcim.interfaces,
@@ -174,9 +178,9 @@ def nb_api():
         api.dcim.devices,
         name="Test-Device-3",
         device_type=test_device_type.id,
-        device_role=test_device_role_2.id,
         site=test_site.id,
         tags=[],
+        **{device_role_key: test_device_role_2.id},
     )
     test_device_3_intf_1 = nb_create(
         api.dcim.interfaces,
