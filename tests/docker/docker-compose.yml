@@ -1,0 +1,117 @@
+---
+version: "3.4"
+services:
+  netbox: &netbox
+    build: .
+    depends_on:
+      - postgres
+      - redis
+      - redis-cache
+    user: "unit:root"
+    ports:
+      - 8000:8080
+    healthcheck:
+      start_period: 300s
+      timeout: 3s
+      interval: 15s
+      test: "curl -f http://localhost:8080/api/ || exit 1"
+    environment:
+      CORS_ORIGIN_ALLOW_ALL: "true"
+      DB_HOST: postgres
+      DB_NAME: &postgres_db netbox
+      DB_PASSWORD: &postgres_password J5brHrAXFLQSif0K
+      DB_USER: &postgres_user netbox
+      GRAPHQL_ENABLED: "true"
+      HOUSEKEEPING_INTERVAL: 86400
+      METRICS_ENABLED: "false"
+      REDIS_CACHE_DATABASE: 1
+      REDIS_CACHE_HOST: redis-cache
+      REDIS_CACHE_INSECURE_SKIP_TLS_VERIFY: "false"
+      REDIS_CACHE_PASSWORD: &redis_cache_password t4Ph722qJ5QHeQ1qfu36
+      REDIS_CACHE_SSL: "false"
+      REDIS_DATABASE: 0
+      REDIS_HOST: redis
+      REDIS_INSECURE_SKIP_TLS_VERIFY: "false"
+      REDIS_PASSWORD: &redis_password H733Kdjndks81
+      REDIS_SSL: "false"
+      SECRET_KEY: "r(m)9nLGnz$$(_q3N4z1k(EFsMCjjjzx08x9VhNVcfd%6RF#r!6DE@+V5Zk2X"
+      WEBHOOKS_ENABLED: "true"
+      SKIP_SUPERUSER: "false"
+      SUPERUSER_API_TOKEN: "0123456789abcdef0123456789abcdef01234567"
+      SUPERUSER_EMAIL: "admin"
+      SUPERUSER_NAME: "admin"
+      SUPERUSER_PASSWORD: "admin"
+      LOGLEVEL: DEBUG
+      DEBUG: "true"
+      DB_WAIT_DEBUG: "1"
+    volumes:
+      - ./plugins.py:/etc/netbox/config/plugins.py:z,ro
+  netbox-worker:
+    <<: *netbox
+    depends_on:
+      netbox:
+        condition: service_healthy
+    ports: []
+    command:
+      - /opt/netbox/venv/bin/python
+      - /opt/netbox/netbox/manage.py
+      - rqworker
+    healthcheck:
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      test: "ps -aux | grep -v grep | grep -q rqworker || exit 1"
+  netbox-housekeeping:
+    <<: *netbox
+    depends_on:
+      netbox:
+        condition: service_healthy
+    ports: []
+    command:
+      - /opt/netbox/housekeeping.sh
+    healthcheck:
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      test: "ps -aux | grep -v grep | grep -q housekeeping || exit 1"
+
+  # postgres
+  postgres:
+    image: docker.io/postgres:15-alpine
+    volumes:
+      - netbox-postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: *postgres_db
+      POSTGRES_PASSWORD: *postgres_password
+      POSTGRES_USER: *postgres_user
+
+  # redis
+  redis:
+    image: docker.io/redis:7-alpine
+    command:
+      - sh
+      - -c # this is to evaluate the $REDIS_PASSWORD from the env
+      - redis-server --appendonly yes --requirepass $$REDIS_PASSWORD ## $$ because of docker-compose
+    volumes:
+      - netbox-redis-data:/data
+    environment:
+      REDIS_PASSWORD: *redis_password
+
+  redis-cache:
+    image: docker.io/redis:7-alpine
+    command:
+      - sh
+      - -c # this is to evaluate the $REDIS_PASSWORD from the env
+      - redis-server --requirepass $$REDIS_PASSWORD ## $$ because of docker-compose
+    volumes:
+      - netbox-redis-cache-data:/data
+    environment:
+      REDIS_PASSWORD: *redis_cache_password
+
+volumes:
+  netbox-postgres-data:
+    driver: local
+  netbox-redis-cache-data:
+    driver: local
+  netbox-redis-data:
+    driver: local

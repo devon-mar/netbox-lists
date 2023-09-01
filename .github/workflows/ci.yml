@@ -45,8 +45,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - container_tag: v3.5
-            netbox_docker_tag: 2.6.1
+          - netbox: v3.5
+          - netbox: v3.6
 
     runs-on: ubuntu-latest
     steps:
@@ -74,20 +74,21 @@ jobs:
         run: poetry install
         if: steps.cache-poetry-dependencies.outputs.cache-hit != 'true'
 
-      - name: Checkout netbox-community/netbox-docker
-        uses: actions/checkout@v3
-        with:
-          repository: netbox-community/netbox-docker
-          path: netbox-docker
-          ref: ${{ matrix.netbox_docker_tag }}
-
       - name: Run poetry build
         run: poetry build
 
-      - name: Run test_setup.sh
-        run: ./tests/test_setup.sh
+      - name: Build the Docker image
         env:
-          NETBOX_CONTAINER_TAG: ${{ matrix.container_tag }}
+          CONTAINER_TAG: ${{ matrix.netbox }}
+        run: |
+          WHL_FILE=$(ls ./dist/ | grep .whl)
+          cp "./dist/$WHL_FILE" ./tests/docker/
+          cd ./tests/docker/
+          docker-compose build --build-arg "FROM=netboxcommunity/netbox:$CONTAINER_TAG" --build-arg "WHL_FILE=$WHL_FILE"
+
+      - name: Start netbox
+        working-directory: ./tests/docker/
+        run: docker-compose up -d
 
       - name: Run pytest
         run: |
@@ -95,5 +96,5 @@ jobs:
 
       - name: Show Docker logs
         if: ${{ always() }}
+        working-directory: ./tests/docker/
         run: docker-compose logs
-        working-directory: ./netbox-docker/
