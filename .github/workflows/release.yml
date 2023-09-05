@@ -13,7 +13,7 @@ jobs:
       # https://docs.pypi.org/trusted-publishers/
       id-token: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install poetry
         run: pipx install poetry
