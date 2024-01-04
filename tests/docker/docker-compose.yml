@@ -44,6 +44,7 @@ services:
       LOGLEVEL: DEBUG
       DEBUG: "true"
       DB_WAIT_DEBUG: "1"
+      ENFORCE_GLOBAL_UNIQUE: "false"
     volumes:
       - ./plugins.py:/etc/netbox/config/plugins.py:z,ro
   netbox-worker:
