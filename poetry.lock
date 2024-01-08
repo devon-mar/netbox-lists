@@ -402,13 +402,13 @@ files = [
 
 [[package]]
 name = "pynetbox"
-version = "7.2.0"
+version = "7.3.3"
 description = "NetBox API client library"
 optional = false
 python-versions = "*"
 files = [
-    {file = "pynetbox-7.2.0-py3-none-any.whl", hash = "sha256:73ac66250f8899152180b5e1fca63402d4aef8ed361b291f19d7ba3730f87a6c"},
-    {file = "pynetbox-7.2.0.tar.gz", hash = "sha256:3735f4d44e81da4b9af3cc1fdf18e708752ac5d863442100d987886c099df5df"},
+    {file = "pynetbox-7.3.3-py3-none-any.whl", hash = "sha256:9bc25f83ff126f12d26976e544a2f0f6c7c898c261e6d47f8a4144ab47686d81"},
+    {file = "pynetbox-7.3.3.tar.gz", hash = "sha256:b0bcef4c3a019516d2425ae0ce5509eae7f4f11ad4510c9fe9527d468f22529b"},
 ]
 
 [package.dependencies]
@@ -561,4 +561,4 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=4.6)", "pytest-black (
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.6.2"
-content-hash = "b1a6e515649f43b3b6f83c305e8113a5cfd516c28cedba72285c6b09cff9b58b"
+content-hash = "f363e4e44b878b7760e7f72b12d8512e628a00e06477f881283f3d691b957e63"
