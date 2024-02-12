@@ -318,13 +318,13 @@ files = [
 
 [[package]]
 name = "netaddr"
-version = "0.10.1"
+version = "1.0.0"
 description = "A network address manipulation library for Python"
 optional = false
 python-versions = "*"
 files = [
-    {file = "netaddr-0.10.1-py2.py3-none-any.whl", hash = "sha256:9822305b42ea1020d54fee322d43cee5622b044c07a1f0130b459bb467efcf88"},
-    {file = "netaddr-0.10.1.tar.gz", hash = "sha256:f4da4222ca8c3f43c8e18a8263e5426c750a3a837fdfeccf74c68d0408eaa3bf"},
+    {file = "netaddr-1.0.0-py3-none-any.whl", hash = "sha256:0dbf1263166c8daec9a6c990a9ae32804657963a1bba1387a755a4edf5ef93bc"},
+    {file = "netaddr-1.0.0.tar.gz", hash = "sha256:eb046b55354e7a5bf801c04902ae923bd699190242d89b099e896f9b2724b4d3"},
 ]
 
 [[package]]
@@ -500,4 +500,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "544eb567dfde687bfccae9f69597dbf157e7a8323e353a42f9e3c142114cddf3"
+content-hash = "d7c917c719c67dddca7dddf0d5c5e2564cfb919b80df9c92f994e9faf6b9a9dd"
