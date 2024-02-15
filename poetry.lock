@@ -318,14 +318,17 @@ files = [
 
 [[package]]
 name = "netaddr"
-version = "1.0.0"
+version = "1.1.0"
 description = "A network address manipulation library for Python"
 optional = false
-python-versions = "*"
+python-versions = ">=3.7"
 files = [
-    {file = "netaddr-1.0.0-py3-none-any.whl", hash = "sha256:0dbf1263166c8daec9a6c990a9ae32804657963a1bba1387a755a4edf5ef93bc"},
-    {file = "netaddr-1.0.0.tar.gz", hash = "sha256:eb046b55354e7a5bf801c04902ae923bd699190242d89b099e896f9b2724b4d3"},
+    {file = "netaddr-1.1.0-py3-none-any.whl", hash = "sha256:d542c37909f1624665ec7f59ea2e388a20eb678188f1b0c4cb50fdd600f89264"},
+    {file = "netaddr-1.1.0.tar.gz", hash = "sha256:eabeba62193525757ed3ab4aacc4ab8089f84e57059fd41fde58df95c128a26d"},
 ]
+
+[package.extras]
+shell = ["ipython"]
 
 [[package]]
 name = "packaging"
@@ -500,4 +503,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "d7c917c719c67dddca7dddf0d5c5e2564cfb919b80df9c92f994e9faf6b9a9dd"
+content-hash = "944381d230e2c9b0ecea1954275cec8f64eb6babc76ef1277b99be147afe2a99"
