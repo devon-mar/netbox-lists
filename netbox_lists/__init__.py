@@ -2,7 +2,7 @@ __version__ = "3.1.1"
 
 from typing import List
 
-from extras.plugins import PluginConfig
+from netbox.plugins import PluginConfig
 
 
 class ListsPluginConfig(PluginConfig):
