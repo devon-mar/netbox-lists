@@ -1,7 +1,7 @@
 import itertools
 import operator
 from functools import reduce
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Dict, Iterable, Optional, Union
 
 from dcim.filtersets import DeviceFilterSet
 from dcim.models import Device
@@ -723,13 +723,6 @@ class DevicesVMsAttrsListViewSet(ListsBaseViewSet):
 
         attrs = settings.PLUGINS_CONFIG["netbox_lists"]["devices_vms_attrs"]
 
-        device_attrs: List[Iterable[str]] = []
-        for a in attrs:
-            if len(a) > 0 and a[0] == "role":
-                device_attrs.append(("device_role", *a[1:]))
-            else:
-                device_attrs.append(a)
-
         devices = filter_queryset(
             DeviceFilterSet(
                 request.query_params,
@@ -744,5 +737,5 @@ class DevicesVMsAttrsListViewSet(ListsBaseViewSet):
         )
         return Response(
             [self._to_dict(attrs, attrs, d) for d in vms]
-            + [self._to_dict(device_attrs, attrs, d) for d in devices]
+            + [self._to_dict(attrs, attrs, d) for d in devices]
         )
