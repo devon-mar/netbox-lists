@@ -1,4 +1,4 @@
-__version__ = "3.1.1"
+__version__ = "4.0.0"
 
 
 from netbox.plugins import PluginConfig
@@ -8,7 +8,7 @@ class ListsPluginConfig(PluginConfig):
     name = "netbox_lists"
     verbose_name = "NetBox Lists"
     version = __version__
-    author = "Devon Mar"
+    author = "@devon-mar"
     base_url = "lists"
     required_settings: list[str] = []
     default_settings = {
