@@ -1,5 +1,5 @@
 import itertools
-from typing import Any, Iterable, List, Union
+from typing import Any, Iterable, Optional
 
 from django.conf import settings
 from django.db.models import Q
@@ -40,7 +40,7 @@ def set_prefixlen_max(ipn: IPNetwork) -> IPNetwork:
 
 
 def device_vm_primary_list(
-    qs: QuerySet[Any], family: Union[int, None]
+    qs: QuerySet[Any], family: Optional[int]
 ) -> Iterable[IPNetwork]:
     if family is None:
         queryset = qs.filter(
@@ -65,10 +65,10 @@ def device_vm_primary_list(
 
 
 def services_primary_ips(
-    qs: QuerySet[Any], family: Union[int, None]
+    qs: QuerySet[Any], family: Optional[int]
 ) -> Iterable[IPNetwork]:
     family_filter = Q()
-    values: List[str] = []
+    values: list[str] = []
     if family == 4 or family is None:
         family_filter |= Q(device__primary_ip4__isnull=False) | Q(
             virtual_machine__primary_ip4__isnull=False
@@ -95,7 +95,7 @@ def services_primary_ips(
 
 
 def services_assigned_ips(
-    qs: QuerySet[Any], family: Union[int, None]
+    qs: QuerySet[Any], family: Optional[int]
 ) -> Iterable[IPNetwork]:
     if family is None:
         family_filter = Q()
@@ -112,9 +112,9 @@ def services_assigned_ips(
 
 
 def get_service_ips(
-    qs: QuerySet[Any], family: Union[int, None], include_primaries: bool
+    qs: QuerySet[Any], family: Optional[int], include_primaries: bool
 ) -> Iterable[IPNetwork]:
-    iterables: List[Iterable[IPNetwork]] = [services_assigned_ips(qs, family)]
+    iterables: list[Iterable[IPNetwork]] = [services_assigned_ips(qs, family)]
 
     if include_primaries is True:
         iterables.append(services_primary_ips(qs, family))
@@ -134,7 +134,7 @@ def get_svc_primary_ips_param(param: str, req: Request) -> bool:
         raise ValidationError(f"{param} must be true or false.")
 
 
-def get_family_param(req: Request) -> Union[int, None]:
+def get_family_param(req: Request) -> Optional[int]:
     """
     Raises a ValidationError if family is not '4' or '6'.
     """
@@ -172,11 +172,11 @@ def get_summarize_param(req: Request) -> bool:
         raise ValidationError("summarize must be true or false.")
 
 
-def ip_range_prefixes(start: IPNetwork, end: IPNetwork) -> List[IPNetwork]:
+def ip_range_prefixes(start: IPNetwork, end: IPNetwork) -> list[IPNetwork]:
     return iprange_to_cidrs(start.ip, end.ip)
 
 
-def _json_rep(obj: Any) -> Union[str, int, bool, list, dict, None]:
+def _json_rep(obj: Any) -> str | int | bool | list | dict | None:
     """Return a JSON serializable representation"""
     if isinstance(obj, (str, int, bool)) or obj is None:
         return obj

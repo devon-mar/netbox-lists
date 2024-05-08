@@ -1,13 +1,13 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import pynetbox
 import pytest
 import requests
 from pynetbox.core import endpoint, response
 
-nb_objects: List[response.Record] = []
+nb_objects: list[response.Record] = []
 
-API_TOKENS: Dict[str, str] = {
+API_TOKENS: dict[str, str] = {
     "no_permissions": "to be set",
     "constraint": "to be set",
 }
@@ -56,15 +56,11 @@ def nb_api():
         "http://localhost:8000", token="0123456789abcdef0123456789abcdef01234567"
     )
 
-    version = api.version
-    # We only support NetBox 3.5 and 3.6.
-    device_role_key = "device_role" if version == "3.5" else "role"
-
     nb_create(
         api.extras.custom_fields,
         name="fqdn",
         type="text",
-        content_types=["dcim.device", "virtualization.virtualmachine"],
+        object_types=["dcim.device", "virtualization.virtualmachine"],
     )
     test_tag = nb_create(api.extras.tags, name="Test Tag", slug="test-tag")
     test_device_tag = nb_create(
@@ -96,7 +92,7 @@ def nb_api():
         site=test_site.id,
         tags=[test_device_tag.id],
         custom_fields={"fqdn": "device-1.example.com"},
-        **{device_role_key: test_device_role.id},
+        role=test_device_role.id,
     )
     test_device_1_intf_1 = nb_create(
         api.dcim.interfaces,
@@ -133,7 +129,7 @@ def nb_api():
         device_type=test_device_type.id,
         site=test_site.id,
         tags=[test_tag.id],
-        **{device_role_key: test_device_role_2.id},
+        role=test_device_role_2.id,
     )
     test_device_2_intf_1 = nb_create(
         api.dcim.interfaces,
@@ -180,7 +176,7 @@ def nb_api():
         device_type=test_device_type.id,
         site=test_site.id,
         tags=[],
-        **{device_role_key: test_device_role_2.id},
+        role=test_device_role_2.id,
     )
     test_device_3_intf_1 = nb_create(
         api.dcim.interfaces,
@@ -877,7 +873,7 @@ def nb_api():
     ],
 )
 def test_lists(
-    nb_api: pynetbox.api, nb_requests: requests.Session, url: str, expected: List[str]
+    nb_api: pynetbox.api, nb_requests: requests.Session, url: str, expected: list[str]
 ):
     req = nb_requests.get(url)
     assert req.status_code == 200
@@ -1198,7 +1194,10 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
     ],
 )
 def test_prom_sd(
-    nb_api: pynetbox.api, nb_requests: requests.Session, url: str, expected: List[dict]
+    nb_api: pynetbox.api,
+    nb_requests: requests.Session,
+    url: str,
+    expected: list[dict[str, Any]],
 ):
     resp = nb_requests.get(url).json()
 
@@ -1352,7 +1351,7 @@ def test_devices_vms_attrs(
     nb_api: pynetbox.api,
     nb_requests: requests.Session,
     url: str,
-    expected: List[Dict[str, Any]],
+    expected: list[dict[str, Any]],
 ) -> None:
     resp = nb_requests.get(url)
     assert resp.status_code == 200

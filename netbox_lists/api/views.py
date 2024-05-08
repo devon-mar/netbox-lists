@@ -1,7 +1,7 @@
 import itertools
 import operator
 from functools import reduce
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Iterable, Optional
 
 from dcim.filtersets import DeviceFilterSet
 from dcim.models import Device
@@ -408,7 +408,7 @@ class TagsListViewSet(ListsBaseViewSet):
         )
 
     def get_prefixes(
-        self, tag: Tag, family: Union[int, None], request: Request
+        self, tag: Tag, family: Optional[int], request: Request
     ) -> Iterable[IPNetwork]:
         if not self.param_all_any(request, "prefixes"):
             return []
@@ -427,7 +427,7 @@ class TagsListViewSet(ListsBaseViewSet):
         )
 
     def get_aggregates(
-        self, tag: Tag, family: Union[int, None], request: Request
+        self, tag: Tag, family: Optional[int], request: Request
     ) -> Iterable[IPNetwork]:
         if not self.param_all_any(request, "aggregates"):
             return []
@@ -447,7 +447,7 @@ class TagsListViewSet(ListsBaseViewSet):
         )
 
     def get_ips(
-        self, tag: Tag, family: Union[int, None], request: Request
+        self, tag: Tag, family: Optional[int], request: Request
     ) -> Iterable[IPNetwork]:
         if family == 4:
             family_filter = Q(address__family=4)
@@ -476,7 +476,7 @@ class TagsListViewSet(ListsBaseViewSet):
             return []
 
     def get_services(
-        self, tag: Tag, family: Union[int, None], request: Request
+        self, tag: Tag, family: Optional[int], request: Request
     ) -> Iterable[IPNetwork]:
         if not self.param_all_any(request, "services"):
             return []
@@ -488,7 +488,7 @@ class TagsListViewSet(ListsBaseViewSet):
         )
 
     def get_devices_primary(
-        self, tag: Tag, family: Union[int, None], request: Request
+        self, tag: Tag, family: Optional[int], request: Request
     ) -> Iterable[IPNetwork]:
         if not self.param_all_primary(request, "devices_primary", True):
             return []
@@ -498,7 +498,7 @@ class TagsListViewSet(ListsBaseViewSet):
         )
 
     def get_vms_primary(
-        self, tag: Tag, family: Union[int, None], request: Request
+        self, tag: Tag, family: Optional[int], request: Request
     ) -> Iterable[IPNetwork]:
         if not self.param_all_primary(request, "vms_primary", True):
             return []
@@ -676,8 +676,8 @@ class DevicesVMsAttrsListViewSet(ListsBaseViewSet):
         self,
         attrs: Iterable[Iterable[str]],
         display_attrs: Iterable[Iterable[str]],
-        device: Union[Device, VirtualMachine],
-    ) -> Dict[str, Any]:
+        device: Device | VirtualMachine,
+    ) -> dict[str, Any]:
         """Convert a device or VM to a dictionary"""
         return {
             "__".join(d_a): get_attr_json(a, device)
@@ -723,13 +723,6 @@ class DevicesVMsAttrsListViewSet(ListsBaseViewSet):
 
         attrs = settings.PLUGINS_CONFIG["netbox_lists"]["devices_vms_attrs"]
 
-        device_attrs: List[Iterable[str]] = []
-        for a in attrs:
-            if len(a) > 0 and a[0] == "role":
-                device_attrs.append(("device_role", *a[1:]))
-            else:
-                device_attrs.append(a)
-
         devices = filter_queryset(
             DeviceFilterSet(
                 request.query_params,
@@ -744,5 +737,5 @@ class DevicesVMsAttrsListViewSet(ListsBaseViewSet):
         )
         return Response(
             [self._to_dict(attrs, attrs, d) for d in vms]
-            + [self._to_dict(device_attrs, attrs, d) for d in devices]
+            + [self._to_dict(attrs, attrs, d) for d in devices]
         )

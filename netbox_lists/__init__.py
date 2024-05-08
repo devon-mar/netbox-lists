@@ -1,8 +1,7 @@
 __version__ = "3.1.1"
 
-from typing import List
 
-from extras.plugins import PluginConfig
+from netbox.plugins import PluginConfig
 
 
 class ListsPluginConfig(PluginConfig):
@@ -11,7 +10,7 @@ class ListsPluginConfig(PluginConfig):
     version = __version__
     author = "Devon Mar"
     base_url = "lists"
-    required_settings: List[str] = []
+    required_settings: list[str] = []
     default_settings = {
         "as_cidr": True,
         "service_primary_ips": True,

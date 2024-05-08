@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Dict, Generic, List, TypeVar
+from typing import Generic, TypeVar
 
 from dcim.models import Device
 from django.conf import settings
@@ -19,7 +19,7 @@ class BasePrometheusSerializer(serializers.Serializer, Generic[T]):
 
     default_target_attr = "name"
 
-    def get_targets(self, device: T) -> List[str]:
+    def get_targets(self, device: T) -> list[str]:
         # Default to default_target_attr
         for attrs in chain(
             settings.PLUGINS_CONFIG["netbox_lists"][
@@ -36,7 +36,7 @@ class BasePrometheusSerializer(serializers.Serializer, Generic[T]):
             f"No target found for {repr(device)}. (this shouldn't happen)"
         )
 
-    def get_labels(self, device: T) -> Dict[str, str]:
+    def get_labels(self, device: T) -> dict[str, str]:
         labels = {
             k: get_attr_str(v, device)
             for k, v in settings.PLUGINS_CONFIG["netbox_lists"][
