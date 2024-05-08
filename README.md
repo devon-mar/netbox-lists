@@ -67,8 +67,6 @@ PLUGINS_CONFIG = {
         "devices_vms_attrs": [
             ("id",),
             ("name",),
-            # `role` will automatically be converted to `device_role` for devices.
-            # Don't use `device_role`.
             ("role", "slug"),
             ("platform", "slug"),
             ("primary_ip", "address"),
