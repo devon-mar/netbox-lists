@@ -83,11 +83,11 @@ jobs:
           WHL_FILE=$(ls ./dist/ | grep .whl)
           cp "./dist/$WHL_FILE" ./tests/docker/
           cd ./tests/docker/
-          docker-compose build --build-arg "FROM=netboxcommunity/netbox:$CONTAINER_TAG" --build-arg "WHL_FILE=$WHL_FILE"
+          docker compose build --build-arg "FROM=netboxcommunity/netbox:$CONTAINER_TAG" --build-arg "WHL_FILE=$WHL_FILE"
 
       - name: Start netbox
         working-directory: ./tests/docker/
-        run: docker-compose up -d
+        run: docker compose up -d
 
       - name: Run pytest
         run: |
