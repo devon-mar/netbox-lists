@@ -1,13 +1,13 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import pynetbox
 import pytest
 import requests
 from pynetbox.core import endpoint, response
 
-nb_objects: List[response.Record] = []
+nb_objects: list[response.Record] = []
 
-API_TOKENS: Dict[str, str] = {
+API_TOKENS: dict[str, str] = {
     "no_permissions": "to be set",
     "constraint": "to be set",
 }
@@ -873,7 +873,7 @@ def nb_api():
     ],
 )
 def test_lists(
-    nb_api: pynetbox.api, nb_requests: requests.Session, url: str, expected: List[str]
+    nb_api: pynetbox.api, nb_requests: requests.Session, url: str, expected: list[str]
 ):
     req = nb_requests.get(url)
     assert req.status_code == 200
@@ -1194,7 +1194,10 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
     ],
 )
 def test_prom_sd(
-    nb_api: pynetbox.api, nb_requests: requests.Session, url: str, expected: List[dict]
+    nb_api: pynetbox.api,
+    nb_requests: requests.Session,
+    url: str,
+    expected: list[dict[str, Any]],
 ):
     resp = nb_requests.get(url).json()
 
@@ -1348,7 +1351,7 @@ def test_devices_vms_attrs(
     nb_api: pynetbox.api,
     nb_requests: requests.Session,
     url: str,
-    expected: List[Dict[str, Any]],
+    expected: list[dict[str, Any]],
 ) -> None:
     resp = nb_requests.get(url)
     assert resp.status_code == 200
