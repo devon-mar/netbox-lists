@@ -12,7 +12,7 @@ netaddr = ">=0.8,<1.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^8.2"
-flake8 = "^5.0"
+flake8 = "^7.0"
 pynetbox = "^7.2.0"
 requests = "^2.27.1"
 isort = "^5.10.1"
