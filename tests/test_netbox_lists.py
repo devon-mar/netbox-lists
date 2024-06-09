@@ -66,7 +66,7 @@ def nb_api():
     test_device_tag = nb_create(
         api.extras.tags, name="Test Device Tag", slug="test-device-tag"
     )
-    test_range_tag = nb_create(
+    _test_range_tag = nb_create(
         api.extras.tags, name="Test range tag", slug="test-range-tag"
     )
     test_site = nb_create(api.dcim.sites, name="Test Site", slug="test-site")
@@ -153,7 +153,7 @@ def nb_api():
         assigned_object_id=test_device_2_intf_1.id,
         tags=[test_tag.id],
     )
-    test_device_2_svc_1 = nb_create(
+    _test_device_2_svc_1 = nb_create(
         api.ipam.services,
         name="DNS",
         ports=[53],
@@ -161,7 +161,7 @@ def nb_api():
         device=test_device_2.id,
         ipaddresses=[test_device_2_intf_1_ip_1.id],
     )
-    test_device_2_svc_2 = nb_create(
+    _test_device_2_svc_2 = nb_create(
         api.ipam.services,
         name="HTTP",
         ports=[80],
@@ -238,14 +238,14 @@ def nb_api():
         assigned_object_type="virtualization.vminterface",
         assigned_object_id=test_vm_1_intf_1.id,
     )
-    test_vm_1_intf_2_ip_1 = nb_create(
+    _test_vm_1_intf_2_ip_1 = nb_create(
         api.ipam.ip_addresses,
         address="192.0.2.4/24",
         assigned_object_type="virtualization.vminterface",
         assigned_object_id=test_vm_1_intf_2.id,
     )
     # This service has no assigned IPs.
-    test_device_2_svc_1 = nb_create(
+    _test_device_2_svc_1 = nb_create(
         api.ipam.services,
         name="HTTP",
         ports=[80],
@@ -262,47 +262,47 @@ def nb_api():
         },
     )
 
-    test_vm_2 = nb_create(
+    _test_vm_2 = nb_create(
         api.virtualization.virtual_machines,
         name="VM2",
         cluster=test_cluster.id,
         role=test_device_role_2.id,
     )
 
-    test_prefix_1 = nb_create(api.ipam.prefixes, prefix="192.0.2.0/24")
-    test_prefix_2 = nb_create(
+    _test_prefix_1 = nb_create(api.ipam.prefixes, prefix="192.0.2.0/24")
+    _test_prefix_2 = nb_create(
         api.ipam.prefixes, prefix="192.0.2.32/27", tags=[test_tag.id]
     )
-    test_prefix_3 = nb_create(
+    _test_prefix_3 = nb_create(
         api.ipam.prefixes, prefix="2001:db8:2::/64", tags=[test_tag.id]
     )
-    test_prefix_4 = nb_create(api.ipam.prefixes, prefix="2001:db8:3::/127")
+    _test_prefix_4 = nb_create(api.ipam.prefixes, prefix="2001:db8:3::/127")
     test_rir = nb_create(api.ipam.rirs, name="test rir", slug="test-rir")
-    test_aggregate_1 = nb_create(
+    _test_aggregate_1 = nb_create(
         api.ipam.aggregates, prefix="10.0.0.0/8", rir=test_rir.id
     )
-    test_aggregate_2 = nb_create(
+    _test_aggregate_2 = nb_create(
         api.ipam.aggregates, prefix="172.16.0.0/12", rir=test_rir.id, tags=[test_tag.id]
     )
-    test_aggregate_3 = nb_create(
+    _test_aggregate_3 = nb_create(
         api.ipam.aggregates, prefix="2001:db8::/32", rir=test_rir.id, tags=[test_tag.id]
     )
-    test_range_1 = nb_create(
+    _test_range_1 = nb_create(
         api.ipam.ip_ranges,
         start_address="198.51.100.10/24",
         end_address="198.51.100.99/24",
     )
-    test_range_2 = nb_create(
+    _test_range_2 = nb_create(
         api.ipam.ip_ranges,
         start_address="198.51.100.100/24",
         end_address="198.51.100.127/24",
     )
-    test_range_3 = nb_create(
+    _test_range_3 = nb_create(
         api.ipam.ip_ranges,
         start_address="2001:db8:f00d::100/64",
         end_address="2001:db8:f00d::203/64",
     )
-    test_range_4 = nb_create(
+    _test_range_4 = nb_create(
         api.ipam.ip_ranges,
         start_address="2001:db8:f00d::204/64",
         end_address="2001:db8:f00d::23f/64",
@@ -311,7 +311,7 @@ def nb_api():
     no_perm_user = nb_create(
         api.users.users, username="no_permissions", password="passw0rd"
     )
-    no_perm = nb_create(
+    _no_perm = nb_create(
         api.users.permissions,
         name="no_permissions",
         object_types=[],
@@ -324,7 +324,7 @@ def nb_api():
     constraint_user = nb_create(
         api.users.users, username="constraint_user", password="passw0rd"
     )
-    constraint_permissions = nb_create(
+    _constraint_permissions = nb_create(
         api.users.permissions,
         name="constraint_permissions",
         object_types=[
