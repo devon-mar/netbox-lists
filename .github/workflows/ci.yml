@@ -35,11 +35,7 @@ jobs:
         run: poetry install
         if: steps.cache-poetry-dependencies.outputs.cache-hit != 'true'
 
-      - uses: psf/black@stable
-
-      - name: Lint with flake8
-        run: |
-          poetry run flake8 netbox_lists --count --max-line-length=120 --show-source --statistics
+      - uses: chartboost/ruff-action@v1
 
   test:
     strategy:
