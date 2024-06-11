@@ -9,11 +9,11 @@ from django.conf import settings
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import (
-    extend_schema,
-    extend_schema_view,
     OpenApiExample,
     OpenApiParameter,
     OpenApiResponse,
+    extend_schema,
+    extend_schema_view,
 )
 from extras.models import Tag
 from ipam.filtersets import (
@@ -283,7 +283,7 @@ class DevicesListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
 
         return make_ip_list_response(
             device_vm_primary_list(
-                self.filter_queryset((self.get_queryset())),
+                self.filter_queryset(self.get_queryset()),
                 family,
             ),
             summarize,
@@ -307,7 +307,7 @@ class VirtualMachinesListViewSet(InvalidFilterCheckMixin, ListsBaseViewSet):
 
         return make_ip_list_response(
             device_vm_primary_list(
-                self.filter_queryset((self.get_queryset())),
+                self.filter_queryset(self.get_queryset()),
                 family,
             ),
             summarize,

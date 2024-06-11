@@ -18,7 +18,7 @@ def nb_cleanup():
     for obj in nb_objects:
         try:
             obj.delete()
-        except Exception as e:
+        except Exception as e:  # noqa: PERF203
             print(f"Error deleting {repr(obj)}: {repr(e)}")
 
 

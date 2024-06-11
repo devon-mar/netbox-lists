@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.db.models.query import QuerySet
 from django_filters import FilterSet
 from django_filters.utils import translate_validation
-from netaddr import cidr_merge, IPNetwork, iprange_to_cidrs
+from netaddr import IPNetwork, cidr_merge, iprange_to_cidrs
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -27,9 +27,9 @@ def make_ip_list_response(
         else:
             ret = (str(i) for i in cidr_merge([str(i) for i in networks]))
     elif use_net_ip is True:
-        ret = set(str(i.ip) for i in networks)
+        ret = {str(i.ip) for i in networks}
     else:
-        ret = set(str(i) for i in networks)
+        ret = {str(i) for i in networks}
 
     return Response(ret)
 
