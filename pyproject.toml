@@ -14,7 +14,7 @@ netaddr = ">=0.8 | ^1.0"
 pytest = "^8.2"
 pynetbox = "^7"
 requests = "^2"
-mypy = "^1.10"
+mypy = "^1.11"
 ruff = "^0.5"
 
 [build-system]
