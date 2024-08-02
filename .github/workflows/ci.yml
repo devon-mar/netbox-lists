@@ -34,10 +34,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install poetry
-        uses: snok/install-poetry@v1.3.4
-        with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+        run: pipx install poetry
 
       - name: Load cached venv
         id: cache-poetry-dependencies
