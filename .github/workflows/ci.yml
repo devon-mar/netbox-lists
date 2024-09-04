@@ -23,7 +23,7 @@ jobs:
       matrix:
         include:
           - netbox: v4.0
-          - netbox: v4.1-beta1
+          - netbox: v4.1
 
     runs-on: ubuntu-latest
     steps:
