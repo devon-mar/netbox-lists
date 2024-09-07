@@ -13,7 +13,7 @@ services:
       start_period: 300s
       timeout: 3s
       interval: 15s
-      test: "curl -f http://localhost:8080/api/ || exit 1"
+      test: curl -f http://localhost:8080/login/ || exit 1
     environment:
       CORS_ORIGIN_ALLOW_ALL: "true"
       DB_HOST: postgres
@@ -87,7 +87,7 @@ services:
 
   # redis
   redis:
-    image: docker.io/redis:7-alpine
+    image: &redis-image docker.io/valkey/valkey:8.0-alpine
     command:
       - sh
       - -c # this is to evaluate the $REDIS_PASSWORD from the env
@@ -96,9 +96,16 @@ services:
       - netbox-redis-data:/data
     environment:
       REDIS_PASSWORD: *redis_password
+    healthcheck: &redis-healthcheck
+      test: '[ $$(valkey-cli --pass "$${REDIS_PASSWORD}" ping) = ''PONG'' ]'
+      start_period: 5s
+      timeout: 3s
+      interval: 1s
+      retries: 5
 
   redis-cache:
-    image: docker.io/redis:7-alpine
+    image: *redis-image
+    healthcheck: *redis-healthcheck
     command:
       - sh
       - -c # this is to evaluate the $REDIS_PASSWORD from the env
