@@ -309,7 +309,7 @@ def nb_api():
     )
 
     no_perm_user = nb_create(
-        api.users.users, username="no_permissions", password="passw0rd"
+        api.users.users, username="no_permissions", password="Passw0rd12Characters"
     )
     _no_perm = nb_create(
         api.users.permissions,
@@ -322,7 +322,7 @@ def nb_api():
     API_TOKENS["no_permissions"] = no_perm_token.key
 
     constraint_user = nb_create(
-        api.users.users, username="constraint_user", password="passw0rd"
+        api.users.users, username="constraint_user", password="Passw0rd12Characters"
     )
     _constraint_permissions = nb_create(
         api.users.permissions,
