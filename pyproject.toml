@@ -15,7 +15,7 @@ pytest = "^8.3"
 pynetbox = "^7"
 requests = "^2"
 mypy = "^1.11"
-ruff = "^0.6"
+ruff = "^0.7"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
