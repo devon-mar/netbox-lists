@@ -263,13 +263,13 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "pynetbox"
-version = "7.4.0"
+version = "7.4.1"
 description = "NetBox API client library"
 optional = false
 python-versions = "*"
 files = [
-    {file = "pynetbox-7.4.0-py3-none-any.whl", hash = "sha256:974d93da77ad404e813bc7b3948d9664e0653262f0fb1e97715217aee062a648"},
-    {file = "pynetbox-7.4.0.tar.gz", hash = "sha256:fd0b1f197b3880048408ff5ed84422dd599bcd9389e32cb06a09b9b0d55c1636"},
+    {file = "pynetbox-7.4.1-py3-none-any.whl", hash = "sha256:f42ce4df6ce97765df91bb4cc0c0e315683d15135265270d78f595114dd20e2b"},
+    {file = "pynetbox-7.4.1.tar.gz", hash = "sha256:3f82b5964ca77a608aef6cc2fc48a3961f7667fbbdbb60646655373e3dae00c3"},
 ]
 
 [package.dependencies]
