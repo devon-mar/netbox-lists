@@ -1,5 +1,6 @@
 import itertools
-from typing import Any, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any, Optional
 
 from django.conf import settings
 from django.db.models import Q

@@ -1,7 +1,8 @@
 import itertools
 import operator
+from collections.abc import Iterable
 from functools import reduce
-from typing import Any, Iterable, Optional
+from typing import Any, Optional
 
 from dcim.filtersets import DeviceFilterSet
 from dcim.models import Device
