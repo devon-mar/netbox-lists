@@ -204,6 +204,13 @@ def nb_api():
             "primary_ip6": test_device_3_intf_1_ip_2.id,
         },
     )
+    _test_device_4_no_name = nb_create(
+        api.dcim.devices,
+        # no Name
+        device_type=test_device_type.id,
+        site=test_site.id,
+        role=test_device_role_2.id,
+    )
     test_cluster_type = nb_create(
         api.virtualization.cluster_types,
         name="test cluster type",
@@ -1191,6 +1198,11 @@ def test_lists_txt(nb_api: pynetbox.api, nb_requests: requests.Session):
                 },
             ],
         ),
+        # Device with no name.
+        (
+            "http://localhost:8000/api/plugins/lists/prometheus-devices/?name__empty=True",
+            [],
+        ),
     ],
 )
 def test_prom_sd(
@@ -1285,6 +1297,14 @@ def test_prom_sd(
                     "tags": [],
                     "cf__fqdn": None,
                 },
+                {
+                    "name": None,
+                    "role__slug": "test-role2",
+                    "platform__slug": None,
+                    "primary_ip__address": None,
+                    "tags": [],
+                    "cf__fqdn": None,
+                },
             ],
         ),
         (
@@ -1327,6 +1347,14 @@ def test_prom_sd(
                     "role__slug": "test-role2",
                     "platform__slug": None,
                     "primary_ip__address": "2001:db8::dead:beef:1/64",
+                    "tags": [],
+                    "cf__fqdn": None,
+                },
+                {
+                    "name": None,
+                    "role__slug": "test-role2",
+                    "platform__slug": None,
+                    "primary_ip__address": None,
                     "tags": [],
                     "cf__fqdn": None,
                 },
