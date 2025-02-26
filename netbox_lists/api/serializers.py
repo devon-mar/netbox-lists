@@ -32,6 +32,7 @@ class BasePrometheusSerializer(serializers.Serializer, Generic[T]):
                 return [str(target)]
 
         # This shouldn't happen since default_target_attr should be a required field
+        # Names on VMs are required. The device filterset excludes devices with empty names.
         raise AbortRequest(
             f"No target found for {repr(device)}. (this shouldn't happen)"
         )

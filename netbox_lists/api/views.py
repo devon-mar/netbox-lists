@@ -646,7 +646,7 @@ class TagsListViewSet(ListsBaseViewSet):
 class PrometheusDeviceSD(
     InvalidFilterCheckMixin, mixins.ListModelMixin, ListsBaseViewSet
 ):
-    queryset = Device.objects.all()
+    queryset = Device.objects.filter(name__isnull=False)
     filterset_class = DeviceFilterSet
     serializer_class = PrometheusDeviceSerializer
 
