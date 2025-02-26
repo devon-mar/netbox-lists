@@ -1,6 +1,6 @@
 import itertools
 from collections.abc import Iterable
-from typing import Any, Optional
+from typing import Any
 
 from django.conf import settings
 from django.db.models import Q
@@ -41,7 +41,7 @@ def set_prefixlen_max(ipn: IPNetwork) -> IPNetwork:
 
 
 def device_vm_primary_list(
-    qs: QuerySet[Any], family: Optional[int]
+    qs: QuerySet[Any], family: int | None
 ) -> Iterable[IPNetwork]:
     if family is None:
         queryset = qs.filter(
@@ -65,9 +65,7 @@ def device_vm_primary_list(
         )
 
 
-def services_primary_ips(
-    qs: QuerySet[Any], family: Optional[int]
-) -> Iterable[IPNetwork]:
+def services_primary_ips(qs: QuerySet[Any], family: int | None) -> Iterable[IPNetwork]:
     family_filter = Q()
     values: list[str] = []
     if family == 4 or family is None:
@@ -95,9 +93,7 @@ def services_primary_ips(
     return (set_prefixlen_max(i) for i in itertools.chain.from_iterable(qs) if i)
 
 
-def services_assigned_ips(
-    qs: QuerySet[Any], family: Optional[int]
-) -> Iterable[IPNetwork]:
+def services_assigned_ips(qs: QuerySet[Any], family: int | None) -> Iterable[IPNetwork]:
     if family is None:
         family_filter = Q()
     elif family == 4:
@@ -113,7 +109,7 @@ def services_assigned_ips(
 
 
 def get_service_ips(
-    qs: QuerySet[Any], family: Optional[int], include_primaries: bool
+    qs: QuerySet[Any], family: int | None, include_primaries: bool
 ) -> Iterable[IPNetwork]:
     iterables: list[Iterable[IPNetwork]] = [services_assigned_ips(qs, family)]
 
@@ -135,7 +131,7 @@ def get_svc_primary_ips_param(param: str, req: Request) -> bool:
         raise ValidationError(f"{param} must be true or false.")
 
 
-def get_family_param(req: Request) -> Optional[int]:
+def get_family_param(req: Request) -> int | None:
     """
     Raises a ValidationError if family is not '4' or '6'.
     """
@@ -179,7 +175,7 @@ def ip_range_prefixes(start: IPNetwork, end: IPNetwork) -> list[IPNetwork]:
 
 def _json_rep(obj: Any) -> str | int | bool | list | dict | None:
     """Return a JSON serializable representation"""
-    if isinstance(obj, (str, int, bool)) or obj is None:
+    if isinstance(obj, str | int | bool) or obj is None:
         return obj
     elif isinstance(obj, list):
         return [_json_rep(o) for o in obj]
