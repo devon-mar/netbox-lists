@@ -331,8 +331,8 @@ def nb_api():
         actions=["view"],
         users=[no_perm_user.id],
     )
-    no_perm_token = nb_create(api.users.tokens, user=no_perm_user.id)
-    API_TOKENS["no_permissions"] = no_perm_token.key
+    API_TOKENS["no_permissions"] = "7777777777777777777777777777777777777777"
+    nb_create(api.users.tokens, user=no_perm_user.id, key=API_TOKENS["no_permissions"])
 
     constraint_user = nb_create(
         api.users.users, username="constraint_user", password="Passw0rd12Characters"
@@ -355,8 +355,8 @@ def nb_api():
         users=[constraint_user.id],
         constraints={"id__lt": 0},
     )
-    constraint_token = nb_create(api.users.tokens, user=constraint_user.id)
-    API_TOKENS["constraint"] = constraint_token.key
+    API_TOKENS["constraint"] = "2222222222222222222222222222222222222222"
+    nb_create(api.users.tokens, user=constraint_user.id, key=API_TOKENS["constraint"])
     yield api
     nb_cleanup()
 
