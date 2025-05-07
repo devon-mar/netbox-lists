@@ -158,6 +158,8 @@ def nb_api():
         name="DNS",
         ports=[53],
         protocol="udp",
+        parent_object_type="dcim.device",
+        parent_object_id=test_device_2.id,
         device=test_device_2.id,
         ipaddresses=[test_device_2_intf_1_ip_1.id],
     )
@@ -166,6 +168,8 @@ def nb_api():
         name="HTTP",
         ports=[80],
         protocol="tcp",
+        parent_object_type="dcim.device",
+        parent_object_id=test_device_2.id,
         device=test_device_2.id,
         ipaddresses=[test_device_2_intf_1_ip_1.id, test_device_2_intf_1_ip_2.id],
         tags=[test_tag.id],
@@ -257,6 +261,8 @@ def nb_api():
         name="HTTP",
         ports=[80],
         protocol="tcp",
+        parent_object_type="virtualization.virtualmachine",
+        parent_object_id=test_vm_1.id,
         virtual_machine=test_vm_1.id,
         tags=[test_tag.id],
     )
