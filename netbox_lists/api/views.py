@@ -170,7 +170,7 @@ class InvalidFilterCheckMixin:
         )
 
         if len(invalid_filters) > 0:
-            raise ValidationError({k: "Invalid filter." for k in invalid_filters})
+            raise ValidationError(dict.fromkeys(invalid_filters, "Invalid filter."))
 
         return qs
 
@@ -336,7 +336,7 @@ class DevicesVMsListViewSet(ListsBaseViewSet):
 
         invalid_filters = set(self.request.query_params).difference(valid_filters)
         if len(invalid_filters) > 0:
-            raise ValidationError({k: "Invalid filter." for k in invalid_filters})
+            raise ValidationError(dict.fromkeys(invalid_filters, "Invalid filter."))
 
     @extend_schema(
         description="Combined devices and virtual machines primary IPs list. "
@@ -531,7 +531,7 @@ class TagsListViewSet(ListsBaseViewSet):
 
         invalid_params = set(self.request.query_params).difference(valid_params)
         if len(invalid_params) > 0:
-            raise ValidationError({k: "Invalid filter." for k in invalid_params})
+            raise ValidationError(dict.fromkeys(invalid_params, "Invalid filter."))
 
     @extend_schema(
         description="Get a list of IPs/prefixes associated with the tag.",
@@ -693,7 +693,7 @@ class DevicesVMsAttrsListViewSet(ListsBaseViewSet):
 
         invalid_filters = set(self.request.query_params).difference(valid_filters)
         if len(invalid_filters) > 0:
-            raise ValidationError({k: "Invalid filter." for k in invalid_filters})
+            raise ValidationError(dict.fromkeys(invalid_filters, "Invalid filter."))
 
     @extend_schema(
         description="Get a list of device and VM objects. "
