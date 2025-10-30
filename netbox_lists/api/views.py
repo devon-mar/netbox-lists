@@ -166,7 +166,7 @@ class InvalidFilterCheckMixin:
         other_params = getattr(self, "other_query_params", OTHER_PARAMS)
         qs = super().get_queryset()
         invalid_filters = set(self.request.query_params).difference(
-            other_params, self.filterset_class.get_filters()
+            other_params, self.filterset_class().filters
         )
 
         if len(invalid_filters) > 0:
@@ -329,8 +329,8 @@ class DevicesVMsListViewSet(ListsBaseViewSet):
 
     def validate_filters(self):
         valid_filters = OTHER_PARAMS.union(
-            set(DeviceFilterSet.get_filters()).intersection(
-                VirtualMachineFilterSet.get_filters()
+            set(DeviceFilterSet().filters).intersection(
+                VirtualMachineFilterSet().filters
             )
         )
 
@@ -687,8 +687,8 @@ class DevicesVMsAttrsListViewSet(ListsBaseViewSet):
         }
 
     def validate_filters(self):
-        valid_filters = set(DeviceFilterSet.get_filters()).intersection(
-            VirtualMachineFilterSet.get_filters()
+        valid_filters = set(DeviceFilterSet().filters).intersection(
+            VirtualMachineFilterSet().filters
         )
 
         invalid_filters = set(self.request.query_params).difference(valid_filters)
