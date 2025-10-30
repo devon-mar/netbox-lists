@@ -581,6 +581,10 @@ def nb_api():
             "http://localhost:8000/api/plugins/lists/devices?family=6&as_cidr=false&summarize=false",
             ["2001:db8::1", "2001:db8::dead:beef:1"],
         ),
+        (
+            "http://localhost:8000/api/plugins/lists/devices?cf_fqdn=example.com",
+            ["192.0.2.1/32", "2001:db8::1/128"],
+        ),
         #
         # Virtual Machines
         #
@@ -654,6 +658,17 @@ def nb_api():
                 # Test Device 3
                 "2001:db8::dead:beef:1/128",
                 "192.0.2.5/32",
+            ],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/devices-vms?cf_fqdn=example.com",
+            [
+                # Test Device 1
+                "192.0.2.1/32",
+                "2001:db8::1/128",
+                # VM1
+                "2001:db8::3/128",
+                "192.0.2.3/32",
             ],
         ),
         #
@@ -1377,6 +1392,27 @@ def test_prom_sd(
                     "tags": [],
                     "cf__fqdn": None,
                 }
+            ],
+        ),
+        (
+            "http://localhost:8000/api/plugins/lists/devices-vms-attrs/?cf_fqdn=example.com",
+            [
+                {
+                    "name": "VM1",
+                    "role__slug": "test-role",
+                    "platform__slug": None,
+                    "primary_ip__address": "2001:db8::3/128",
+                    "tags": ["test-tag"],
+                    "cf__fqdn": "vm-1.example.com",
+                },
+                {
+                    "name": "Test Device 1",
+                    "role__slug": "test-role",
+                    "platform__slug": None,
+                    "primary_ip__address": "2001:db8::1/128",
+                    "tags": ["test-device-tag"],
+                    "cf__fqdn": "device-1.example.com",
+                },
             ],
         ),
     ],
