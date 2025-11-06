@@ -1,6 +1,6 @@
 [project]
 name = "netbox-lists"
-version = "4.0.2"
+version = "4.0.3"
 description = ""
 readme = "README.md"
 license = "Apache-2.0"
