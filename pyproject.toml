@@ -17,7 +17,7 @@ dev = [
   "pytest~=8.4.1",
   "pynetbox~=7.0",
   "requests~=2.0",
-  "mypy~=1.18.1",
+  "mypy~=1.19.0",
   "ruff~=0.14.0",
 ]
 
