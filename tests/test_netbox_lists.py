@@ -1,4 +1,5 @@
-from typing import Any
+from collections.abc import Iterator
+from typing import Any, Literal
 
 import pynetbox
 import pytest
@@ -7,10 +8,8 @@ from pynetbox.core import endpoint, response
 
 nb_objects: list[response.Record] = []
 
-API_TOKENS: dict[str, str] = {
-    "no_permissions": "to be set",
-    "constraint": "to be set",
-}
+TestUser = Literal["no_permissions", "constraint"]
+API_TOKENS: dict[TestUser, str] = {}
 
 
 def nb_cleanup():
@@ -42,19 +41,38 @@ def nb_update(r: response.Record, update_dict: dict):
         raise e
 
 
+def provision_token(username: str, password: str) -> str:
+    resp = requests.post(
+        "http://localhost:8000/api/users/tokens/provision/",
+        json={"username": username, "password": password},
+    )
+
+    resp.raise_for_status()
+
+    data = resp.json()
+
+    if data.get("version") == 2:
+        return f"nbt_{data['key']}.{data['token']}"
+    else:
+        return data["key"]
+
+
 @pytest.fixture(scope="session")
-def nb_requests():
+def netbox_token() -> str:
+    return provision_token("admin", "admin")
+
+
+@pytest.fixture(scope="session")
+def nb_requests(netbox_token: str) -> requests.Session:
     s = requests.session()
-    s.headers["Authorization"] = "Token 0123456789abcdef0123456789abcdef01234567"
+    s.headers["Authorization"] = f"Token {netbox_token}"
     s.headers["Accept"] = "application/json"
     return s
 
 
 @pytest.fixture(scope="session")
-def nb_api():
-    api = pynetbox.api(
-        "http://localhost:8000", token="0123456789abcdef0123456789abcdef01234567"
-    )
+def nb_api(netbox_token: str) -> Iterator[pynetbox.api]:
+    api = pynetbox.api("http://localhost:8000", token=netbox_token)
 
     nb_create(
         api.extras.custom_fields,
@@ -320,9 +338,9 @@ def nb_api():
         start_address="2001:db8:f00d::204/64",
         end_address="2001:db8:f00d::23f/64",
     )
-
+    password = "Passw0rd12Characters"
     no_perm_user = nb_create(
-        api.users.users, username="no_permissions", password="Passw0rd12Characters"
+        api.users.users, username="no_permissions", password=password
     )
     _no_perm = nb_create(
         api.users.permissions,
@@ -331,8 +349,10 @@ def nb_api():
         actions=["view"],
         users=[no_perm_user.id],
     )
-    API_TOKENS["no_permissions"] = "7777777777777777777777777777777777777777"
-    nb_create(api.users.tokens, user=no_perm_user.id, key=API_TOKENS["no_permissions"])
+    token = provision_token(no_perm_user.username, password=password)
+    API_TOKENS["no_permissions"] = (
+        f"Bearer {token}" if token.startswith("nbt_") else f"Token {token}"
+    )
 
     constraint_user = nb_create(
         api.users.users, username="constraint_user", password="Passw0rd12Characters"
@@ -355,8 +375,11 @@ def nb_api():
         users=[constraint_user.id],
         constraints={"id__lt": 0},
     )
-    API_TOKENS["constraint"] = "2222222222222222222222222222222222222222"
-    nb_create(api.users.tokens, user=constraint_user.id, key=API_TOKENS["constraint"])
+    token = provision_token(constraint_user.username, password=password)
+    API_TOKENS["constraint"] = (
+        f"Bearer {token}" if token.startswith("nbt_") else f"Token {token}"
+    )
+
     yield api
     nb_cleanup()
 
@@ -914,19 +937,21 @@ def test_lists(
     req = requests.get(
         url,
         headers={
-            "Authorization": f"Token {API_TOKENS['no_permissions']}",
+            "Authorization": API_TOKENS["no_permissions"],
             "Accept": "application/json",
         },
     )
     assert req.status_code == 403
 
+    print(API_TOKENS)
     req = requests.get(
         url,
         headers={
-            "Authorization": f"Token {API_TOKENS['constraint']}",
+            "Authorization": API_TOKENS["constraint"],
             "Accept": "application/json",
         },
     )
+    print(req.text)
     assert req.status_code == 200
     assert req.json() == []
 

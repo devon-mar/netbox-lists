@@ -27,6 +27,7 @@ jobs:
           - netbox: v4.2
           - netbox: v4.3
           - netbox: v4.4
+          - netbox: v4.5
 
     runs-on: ubuntu-latest
     steps:
