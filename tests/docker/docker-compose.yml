@@ -6,7 +6,7 @@ services:
       - postgres
       - redis
       - redis-cache
-    user: "unit:root"
+    user: "999:root"
     ports:
       - 8000:8080
     healthcheck:
@@ -36,7 +36,7 @@ services:
       SECRET_KEY: "r(m)9nLGnz$$(_q3N4z1k(EFsMCjjjzx08x9VhNVcfd%6RF#r!6DE@+V5Zk2X"
       WEBHOOKS_ENABLED: "true"
       SKIP_SUPERUSER: "false"
-      SUPERUSER_API_TOKEN: "0123456789abcdef0123456789abcdef01234567"
+      API_TOKEN_PEPPER_1: "G_^mFD_N5RTksrO#hiyCVWiS_^OTpuY6#D(NCYH2-CS+pjqrdc"
       SUPERUSER_EMAIL: "admin"
       SUPERUSER_NAME: "admin"
       SUPERUSER_PASSWORD: "admin"
