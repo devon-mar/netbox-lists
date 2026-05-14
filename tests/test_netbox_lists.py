@@ -380,6 +380,25 @@ def nb_api(netbox_token: str) -> Iterator[pynetbox.api]:
         f"Bearer {token}" if token.startswith("nbt_") else f"Token {token}"
     )
 
+    _config_context_0 = nb_create(
+        api.extras.config_contexts,
+        name="test-config-context-0",
+        roles=[test_device_role.id],
+        data={
+            "cc_field": 42,
+        },
+    )
+    _config_context_1 = nb_create(
+        api.extras.config_contexts,
+        name="test-config-context-1",
+        clusters=[test_cluster.id],
+        data={
+            "cc_nested": {
+                "beep": "boop",
+            },
+        },
+    )
+
     yield api
     nb_cleanup()
 
@@ -1290,6 +1309,8 @@ def test_prom_sd(
                     "primary_ip__address": "2001:db8::1/128",
                     "tags": ["test-device-tag"],
                     "cf__fqdn": "device-1.example.com",
+                    "config_context__cc_field": 42,
+                    "config_context__cc_nested__beep": None,
                 },
             ],
         ),
@@ -1303,6 +1324,8 @@ def test_prom_sd(
                     "primary_ip__address": "2001:db8::3/128",
                     "tags": ["test-tag"],
                     "cf__fqdn": "vm-1.example.com",
+                    "config_context__cc_field": 42,
+                    "config_context__cc_nested__beep": "boop",
                 },
                 {
                     "name": "Test Device 1",
@@ -1311,6 +1334,8 @@ def test_prom_sd(
                     "primary_ip__address": "2001:db8::1/128",
                     "tags": ["test-device-tag"],
                     "cf__fqdn": "device-1.example.com",
+                    "config_context__cc_field": 42,
+                    "config_context__cc_nested__beep": None,
                 },
             ],
         ),
@@ -1324,6 +1349,8 @@ def test_prom_sd(
                     "primary_ip__address": None,
                     "tags": [],
                     "cf__fqdn": None,
+                    "config_context__cc_field": None,
+                    "config_context__cc_nested__beep": "boop",
                 },
                 {
                     "name": "Test-Device-2",
@@ -1332,6 +1359,8 @@ def test_prom_sd(
                     "primary_ip__address": None,
                     "tags": ["test-tag"],
                     "cf__fqdn": None,
+                    "config_context__cc_field": None,
+                    "config_context__cc_nested__beep": None,
                 },
                 {
                     "name": "Test-Device-3",
@@ -1340,6 +1369,8 @@ def test_prom_sd(
                     "primary_ip__address": "2001:db8::dead:beef:1/64",
                     "tags": [],
                     "cf__fqdn": None,
+                    "config_context__cc_field": None,
+                    "config_context__cc_nested__beep": None,
                 },
                 {
                     "name": None,
@@ -1348,6 +1379,8 @@ def test_prom_sd(
                     "primary_ip__address": None,
                     "tags": [],
                     "cf__fqdn": None,
+                    "config_context__cc_field": None,
+                    "config_context__cc_nested__beep": None,
                 },
             ],
         ),
@@ -1361,6 +1394,8 @@ def test_prom_sd(
                     "primary_ip__address": "2001:db8::3/128",
                     "tags": ["test-tag"],
                     "cf__fqdn": "vm-1.example.com",
+                    "config_context__cc_field": 42,
+                    "config_context__cc_nested__beep": "boop",
                 },
                 {
                     "name": "VM2",
@@ -1369,6 +1404,8 @@ def test_prom_sd(
                     "primary_ip__address": None,
                     "tags": [],
                     "cf__fqdn": None,
+                    "config_context__cc_field": None,
+                    "config_context__cc_nested__beep": "boop",
                 },
                 {
                     "name": "Test Device 1",
@@ -1377,6 +1414,8 @@ def test_prom_sd(
                     "primary_ip__address": "2001:db8::1/128",
                     "tags": ["test-device-tag"],
                     "cf__fqdn": "device-1.example.com",
+                    "config_context__cc_field": 42,
+                    "config_context__cc_nested__beep": None,
                 },
                 {
                     "name": "Test-Device-2",
@@ -1385,6 +1424,8 @@ def test_prom_sd(
                     "primary_ip__address": None,
                     "tags": ["test-tag"],
                     "cf__fqdn": None,
+                    "config_context__cc_field": None,
+                    "config_context__cc_nested__beep": None,
                 },
                 {
                     "name": "Test-Device-3",
@@ -1393,6 +1434,8 @@ def test_prom_sd(
                     "primary_ip__address": "2001:db8::dead:beef:1/64",
                     "tags": [],
                     "cf__fqdn": None,
+                    "config_context__cc_field": None,
+                    "config_context__cc_nested__beep": None,
                 },
                 {
                     "name": None,
@@ -1401,6 +1444,8 @@ def test_prom_sd(
                     "primary_ip__address": None,
                     "tags": [],
                     "cf__fqdn": None,
+                    "config_context__cc_field": None,
+                    "config_context__cc_nested__beep": None,
                 },
             ],
         ),
@@ -1414,6 +1459,8 @@ def test_prom_sd(
                     "primary_ip__address": None,
                     "tags": [],
                     "cf__fqdn": None,
+                    "config_context__cc_field": None,
+                    "config_context__cc_nested__beep": "boop",
                 }
             ],
         ),
@@ -1427,6 +1474,8 @@ def test_prom_sd(
                     "primary_ip__address": "2001:db8::3/128",
                     "tags": ["test-tag"],
                     "cf__fqdn": "vm-1.example.com",
+                    "config_context__cc_field": 42,
+                    "config_context__cc_nested__beep": "boop",
                 },
                 {
                     "name": "Test Device 1",
@@ -1435,6 +1484,8 @@ def test_prom_sd(
                     "primary_ip__address": "2001:db8::1/128",
                     "tags": ["test-device-tag"],
                     "cf__fqdn": "device-1.example.com",
+                    "config_context__cc_field": 42,
+                    "config_context__cc_nested__beep": None,
                 },
             ],
         ),
