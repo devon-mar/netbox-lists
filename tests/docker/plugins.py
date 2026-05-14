@@ -10,6 +10,8 @@ PLUGINS_CONFIG = {
             ("primary_ip", "address"),
             ("tags",),
             ("cf", "fqdn"),
+            ("config_context", "cc_field"),
+            ("config_context", "cc_nested", "beep"),
         ],
         "prometheus_vm_sd_labels": {
             "__meta_netbox_id": ("id",),

@@ -1,6 +1,6 @@
 import itertools
 import operator
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from functools import reduce
 from typing import Any
 
@@ -668,6 +668,16 @@ class PrometheusIPAddressSD(
     serializer_class = PrometheusIPAddressSerializer
 
 
+def _device_attr_helper(attrs: Sequence[str], device: Device | VirtualMachine) -> Any:
+    """
+    Like get_attr_json(attrs, device) but specially handles config contexts.
+    """
+    if attrs[0] == "config_context":
+        return get_attr_json(attrs[1:], device.get_config_context())
+
+    return get_attr_json(attrs, device)
+
+
 class DevicesVMsAttrsListViewSet(ListsBaseViewSet):
     renderer_classes = [JSONRenderer, BrowsableAPIRenderer]
     filterset_class = DeviceFilterSet
@@ -676,15 +686,11 @@ class DevicesVMsAttrsListViewSet(ListsBaseViewSet):
 
     def _to_dict(
         self,
-        attrs: Iterable[Iterable[str]],
-        display_attrs: Iterable[Iterable[str]],
+        attrs: Sequence[Sequence[str]],
         device: Device | VirtualMachine,
     ) -> dict[str, Any]:
         """Convert a device or VM to a dictionary"""
-        return {
-            "__".join(d_a): get_attr_json(a, device)
-            for a, d_a in zip(attrs, display_attrs)
-        }
+        return {"__".join(a): _device_attr_helper(a, device) for a in attrs}
 
     def validate_filters(self):
         valid_filters = set(DeviceFilterSet().filters).intersection(
@@ -738,6 +744,6 @@ class DevicesVMsAttrsListViewSet(ListsBaseViewSet):
             )
         )
         return Response(
-            [self._to_dict(attrs, attrs, d) for d in vms]
-            + [self._to_dict(attrs, attrs, d) for d in devices]
+            [self._to_dict(attrs, d) for d in vms]
+            + [self._to_dict(attrs, d) for d in devices]
         )
