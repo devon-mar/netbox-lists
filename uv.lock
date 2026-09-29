@@ -415,7 +415,7 @@ requires-dist = [{ name = "netaddr", specifier = ">=0.8.0,<2.0.0" }]
 [package.metadata.requires-dev]
 dev = [
     { name = "mypy", specifier = "~=2.3.1" },
-    { name = "pynetbox", specifier = "~=7.7" },
+    { name = "pynetbox", specifier = "~=7.8" },
     { name = "pytest", specifier = "~=9.0.2" },
     { name = "requests", specifier = "~=2.0" },
     { name = "ruff", specifier = "~=0.15.12" },
@@ -459,15 +459,15 @@ wheels = [
 
 [[package]]
 name = "pynetbox"
-version = "7.7.0"
+version = "7.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f7/99/dd840cd6a09956b2f762319e9c88c6afcd58b8094a127c7bd0e7017caca1/pynetbox-7.7.0.tar.gz", hash = "sha256:6ebf1a68fe19e3c9528f1fcf214ceee719ace937c5f78f3f33964738e3cd3f25", size = 98206, upload-time = "2026-05-05T21:37:15.863Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0e/83/2fa04ce44f3b8b5f6090d9cfd6a4b0a8f6945aa304e2c69901cfe53a36d0/pynetbox-7.8.0.tar.gz", hash = "sha256:c359e9b9ed599d145a987c755dbe786da967caf236e3afe1e94a154cf5aeab5c", size = 138670, upload-time = "2026-06-18T16:35:33.983Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8e/bd/43f14b5d0c3f7a801e6bc40295667ae6be262560da063cd240f012410309/pynetbox-7.7.0-py3-none-any.whl", hash = "sha256:48de7c1d23aa0a16e78e76e68a58fbdd72782e13be7f25facafdf325ef0d3640", size = 40047, upload-time = "2026-05-05T21:37:14.9Z" },
+    { url = "https://files.pythonhosted.org/packages/96/ec/bf45fc25fa1e41840a1240cd90851cc4ae9c32bbeab74512582fa7394ac3/pynetbox-7.8.0-py3-none-any.whl", hash = "sha256:1dbcee4479d5aeefff42d5c115f6f7aae68ea61f905b68bde33fe0c543db773d", size = 54271, upload-time = "2026-06-18T16:35:32.848Z" },
 ]
 
 [[package]]
