@@ -15,7 +15,7 @@ dependencies = [
 [dependency-groups]
 dev = [
   "pytest~=9.0.2",
-  "pynetbox~=7.7",
+  "pynetbox~=7.8",
   "requests~=2.34",
   "mypy~=2.4.0",
   "ruff~=0.15.12",
